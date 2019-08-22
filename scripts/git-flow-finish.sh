@@ -2,55 +2,56 @@
 
 usage() {
 
-    echo "Usage: $0 <feature|release|bugfix|hotfix> <branch-name> [version-tag] [tag-message]" 1>&2 
+    echo "usage: $__script_name <feature|release|bugfix|hotfix> <branch-name> [version-tag] [tag-message]" 1>&2 
     exit 1
 
 }
 
 validate_inputs() {
 
-    GIT_FLOW_TYPE=$1
-    BRANCH_NAME=$2
-    VERSION_TAG=$3
-    TAG_MESSAGE=$4
+    readonly __script_name="$0"
+    readonly __git_flow_type="${1-undefined}"
+    readonly __branch_name="${2-undefined}"
+    readonly __version_tag="${3-undefined}"
+    readonly __tag_message="${4-undefined}"
 
-    if [[ -z "$GIT_FLOW_TYPE" ]]; then 
+    if [[ "$__git_flow_type" == "undefined" ]]; then 
         echo "Not enough arguments: GitFlow workflow is mandatory" 1>&2
         usage
     fi
 
-    if [[ -z "$BRANCH_NAME" ]]; then 
+    if [[ "$__branch_name" == "undefined" ]]; then 
         echo "Not enough arguments: Branch name is mandatory" 1>&2
         usage
     else
-        if [[ $BRANCH_NAME == "feature/"* || $BRANCH_NAME == "bugfix/"* || $BRANCH_NAME == "hotfix/"* || $BRANCH_NAME == "release/"* ]]; then
-            SANITIZED_BRANCH=$(echo $BRANCH_NAME | sed "s:feature/::g" | sed "s:bugfix/::g" | sed "s:hotfix/::g" | sed "s:release/::g" )
+        if [[ "$__branch_name" == "feature/"* || "$__branch_name" == "bugfix/"* || "$__branch_name" == "hotfix/"* || "$__branch_name" == "release/"* ]]; then
+            local -r sanitized_branch=$(echo "$__branch_name" | sed "s:feature/::g" | sed "s:bugfix/::g" | sed "s:hotfix/::g" | sed "s:release/::g" )
             echo "Incorrect argument: Branch name contains feature|release|bugfix|hotfix" 1>&2
-            echo "Did you mean? $SANITIZED_BRANCH" 1>&2
+            echo "Did you mean? $sanitized_branch" 1>&2
             usage
         fi
     fi
 
-    if [[ ( $GIT_FLOW_TYPE == "release" || $GIT_FLOW_TYPE == "hotfix" ) && ( -z "$VERSION_TAG" || -z "$TAG_MESSAGE" ) ]]; then
+    if [[ ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) && ( "$__version_tag" == "undefined" || "$__tag_message" == "undefined" ) ]]; then
         echo "Not enough arguments: Version tag and tag message are mandatory for release|hotfix workflows" 1>&2
         usage
     fi
 
-    if [[ ! -z "$VERSION_TAG" && ( $GIT_FLOW_TYPE != "release" && $GIT_FLOW_TYPE != "hotfix" ) ]]; then
+    if [[ "$__version_tag" != "undefined" && ( "$__git_flow_type" != "release" && "$__git_flow_type" != "hotfix" ) ]]; then
         echo "Version tag and tag message are only required for release|hotfix workflows" 1>&2
         usage
     fi
 
-    MAX_AMOUNT_OF_ARGS=4
-    if [[ "$#" > $MAX_AMOUNT_OF_ARGS ]]; then
+    local -r max_amount_of_args=4
+    if [[ "$#" > "$max_amount_of_args" ]]; then
         echo "Too many arguments: $# is greater thant the maximum amount of arguments supported" 1>&2
         usage
     fi
-    shift $(( $MAX_AMOUNT_OF_ARGS - 1 ))
+    shift "$(( $max_amount_of_args - 1 ))"
     
-    BRANCH_TO_MERGE="$GIT_FLOW_TYPE/$BRANCH_NAME"
-    if ! git branch | grep " $BRANCH_TO_MERGE$" 2>&1 1>/dev/null; then
-        echo "$BRANCH_TO_MERGE branch does not exist" 1>&2
+    readonly __branch_to_merge="$__git_flow_type/$__branch_name"
+    if ! git branch | grep " $__branch_to_merge$" &>/dev/null; then
+        echo "$__branch_to_merge branch does not exist" 1>&2
         usage
     fi
 
@@ -58,7 +59,7 @@ validate_inputs() {
 
 validate_hub() {
 
-    if ! hub pr list -h $(git branch | grep \* | sed 's/\* //g') 2>&1 1>/dev/null; then
+    if ! hub pr list -h "$(git branch | grep '\*' | sed 's/\* //g')" &>/dev/null; then
         "ERROR: You probably need to 'Enable SSO' for your current access token from your GitHub account settings"
         exit 1
     fi
@@ -68,39 +69,41 @@ validate_hub() {
 init_config_params() {
 
     # Get current branch base branch
-    if [[ $GIT_FLOW_TYPE == "hotfix" ]]; then
-        BASE_BRANCH=develop
+    local base_branch="undefined"
+    if [[ "$__git_flow_type" == "hotfix" ]]; then
+        base_branch=develop
     else
-        BASE_BRANCH=$(git show-branch | grep '*' | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')
+        base_branch=$(git show-branch | grep '\*' | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')
     fi
 
     # Set target branch
-    if [[ $GIT_FLOW_TYPE == "hotfix" || $GIT_FLOW_TYPE == "release" ]]; then
-        TARGET_BRANCH=master
-    elif [[ $GIT_FLOW_TYPE == "bugfix" ]]; then
-        TARGET_BRANCH=$BASE_BRANCH
+    __target_branch="undefined"
+    if [[ "$__git_flow_type" == "hotfix" || "$__git_flow_type" == "release" ]]; then
+        __target_branch=master
+    elif [[ $__git_flow_type == "bugfix" ]]; then
+        __target_branch="$base_branch"
     else
-        TARGET_BRANCH=develop
+        __target_branch=develop
     fi
 
-    HEAD_BRANCH=$(git branch | grep \* | sed 's/\* //g')
+    readonly __head_branch=$(git branch | grep '\*' | sed 's/\* //g')
 
     # Gets latest merged PR num for current branch
-    PR_NUM=$(hub pr list -s merged -h $HEAD_BRANCH -b $TARGET_BRANCH | head -n1 | awk '{print $1}' | sed s/\#//)
+    local -r merged_pr_num=$(hub pr list -s merged -h "$__head_branch" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
 
     # Gets Github username from .git/config
-    GITHUB_USERNAME=$(grep -A 1 'remote \"origin\"' .git/config | grep -o ':.*/' | sed s/://g | sed s:/::g)
+    local -r github_username=$(grep -A 1 'remote \"origin\"' .git/config | grep -o ':.*/' | sed 's/://g' | sed 's:/::g')
 
     # Gets Github repository from .git/config
-    GITHUB_REPOSITORY=$(grep -A 1 'remote \"origin\"' .git/config | grep -o '/.*\.' | sed s:/::g | sed 's:\.::g')
+    local -r github_repository=$(grep -A 1 'remote \"origin\"' .git/config | grep -o '/.*\.' | sed 's:/::g' | sed 's:\.::g')
 
-    if ! hub api /repos/$GITHUB_USERNAME/$GITHUB_REPOSITORY/pulls/$PR_NUM | python -m json.tool | grep 'merged' | grep 'true' 2>&1 1>/dev/null; then
+    if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null; then
         # Gets latest non-merged PR num for current branch
-        PR_NUM=$(hub pr list -h $HEAD_BRANCH -b $TARGET_BRANCH | head -n1 | awk '{print $1}' | sed s/\#//)
-        if [[ -z $PR_NUM ]]; then
-            echo "No PR has been created from $BRANCH_TO_MERGE to $TARGET_BRANCH" 1>&2
+        local -r non_merged_pr_num=$(hub pr list -h "$__head_branch" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
+        if [[ -z "${non_merged_pr_num}" ]]; then
+            echo "No PR has been created from $__branch_to_merge to $__target_branch on repository $github_repository" 1>&2
         else
-            echo "The PR $PR_NUM on repository $GITHUB_REPOSITORY has not been merged" 1>&2
+            echo "The PR $non_merged_pr_num on repository $github_repository has not been merged" 1>&2
         fi
         exit 1
     fi
@@ -109,10 +112,10 @@ init_config_params() {
 
 set_git_flow_opts() {
 
-    GIT_FLOW_FINISH_OPTIONS=()
-    case $GIT_FLOW_TYPE in
+    __git_flow_finish_options=()
+    case "$__git_flow_type" in
         release|hotfix)
-            GIT_FLOW_FINISH_OPTIONS=("--tagname" "$VERSION_TAG" "--message" "$TAG_MESSAGE")
+            __git_flow_finish_options=("--tagname" "$__version_tag" "--message" "$__tag_message")
             ;;
     esac
 
@@ -120,30 +123,44 @@ set_git_flow_opts() {
 
 sync_base_branch() {
 
-    git checkout $TARGET_BRANCH
-    git pull origin $TARGET_BRANCH
-    if [[ $GIT_FLOW_TYPE == "release" || $GIT_FLOW_TYPE == "hotfix" ]]; then
+    git checkout "$__target_branch"
+    git pull origin "$__target_branch"
+    if [[ "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ]]; then
         git checkout develop
         git pull origin develop
     fi
-    git checkout $HEAD_BRANCH  
+    git checkout "$__head_branch"
     
 }
 
 exec_git_flow_finish() {
-
-    AUTOMATED_PUSH=true git flow $GIT_FLOW_TYPE finish $BRANCH_NAME "${GIT_FLOW_FINISH_OPTIONS[@]}"
+    # Hacky way to avoid an unbound error for an empty array.
+    # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
+    AUTOMATED_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" ${__git_flow_finish_options[@]+"${__git_flow_finish_options[@]}"}
 
 }
 
 ####### SCRIPT START #######
+function main() {
 
-validate_inputs "$@"
-validate_hub
-init_config_params
-set_git_flow_opts
+    # We do not want the script to exit on failed scripts
+    set +o errexit
+    # We do not want to exit on error inside any functions or subshells.
+    set +o errtrace
+    # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+    set -o nounset
+    # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+    set -o pipefail
 
-sync_base_branch
-exec_git_flow_finish
+    validate_inputs "$@"
+    validate_hub
+    init_config_params
+    set_git_flow_opts
 
+    sync_base_branch
+    exec_git_flow_finish
+
+}
 ####### SCRIPT END #######
+
+main "$@"
