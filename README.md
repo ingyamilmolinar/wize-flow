@@ -16,9 +16,9 @@ This project intention is to build upon what `git-flow-avh` already provides in 
 - hub
 
 ## Setup
-1. `cd` into the repository you want to setup
-2. `./wize-flow-init.sh`
-3. enjoy!
+1. Clone this repo
+2. Setup the repository using the init script: `<wize-flow-repo-root>/scripts/wize-flow-init.sh <your-repo-path>`
+3. Enjoy!
 
 ## Usage
 For `git-flow-avh` usage refer to the [cheatsheet](https://danielkummer.github.io/git-flow-cheatsheet/). `git-flow-avh` capabilities for `start`, `publish`, `pull` (discouraged)[https://github.com/petervanderdoes/gitflow-avh/issues/128] and `track` commands are practically untouched. The `finish` command was changed so that now it expects a `merged` PR to continue the back-merge, tagging and cleanup process.
