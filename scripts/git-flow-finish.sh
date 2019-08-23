@@ -60,7 +60,11 @@ validate_inputs() {
 validate_hub() {
 
     if ! hub pr list -h "$(git branch | grep '\*' | sed 's/\* //g')" &>/dev/null; then
-        "ERROR: You probably need to 'Enable SSO' for your current access token from your GitHub account settings"
+        if ! git remote | grep '.'; then
+            echo "ERROR: You need to add a remote pointing to a GitHub repository" 1>&2
+        else
+            echo "ERROR: You need to 'Enable SSO' for your current access token from your GitHub account settings" 1>&2
+        fi
         exit 1
     fi
 
