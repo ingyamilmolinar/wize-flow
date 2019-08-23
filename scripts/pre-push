@@ -2,8 +2,8 @@
 
 protected_main_branch='master'
 protected_dev_branch='develop'
-current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
-if [[ ( $current_branch == $protected_main_branch || $current_branch == $protected_dev_branch ) && $AUTOMATED_PUSH != "true" ]]
+push_command=$(ps -ocommand= -p $PPID)
+if [[ ( "$push_command" == *" $protected_main_branch"* || "$push_command" == *" $protected_dev_branch"* ) && $AUTOMATED_PUSH != "true" ]]
 then
   echo 'You cannot push directly to develop or master'
   exit 1

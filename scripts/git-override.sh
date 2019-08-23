@@ -35,6 +35,14 @@ function git() {
         echo "------------------------- WizeFlow -------------------------"
                 
     }
+    
+    function validate_wize_flow {
+        local -r wize_flow_dir="$(git rev-parse --show-toplevel)"/.git/wize-flow
+        if [[ ! -d "$wize_flow_dir" ]]; then
+            echo "ERROR: Git Repository must be initialized with 'wize-flow init' before using --wize-flow option" 1>&2
+            exit 1
+        fi
+    }
 
     function validate_inputs() {
 
@@ -45,6 +53,9 @@ function git() {
 
         # If not going to call override script, return here
         [[ "$git_verb" == "flow" && "${@:$#}" == "--wize-flow" ]] && __wize_flow_hints="true"
+
+        [[ "$__wize_flow_hints" == "true" ]] && validate_wize_flow
+        
         if [[ "$__wize_flow_hints" == "false" || ( "${2-undefined}" != "finish" && "${3-undefined}" != "finish" ) || (( "${2-undefined}" == "release" || "${2-undefined}" == "hotfix" ) && "$#" -lt 7 ) || (("${2-undefined}" == "feature" || "${2-undefined}" == "bugfix" ) && "$#" -lt 5 ) ]]; then
             if [[ $__wize_flow_hints == "true" && ( "${2-undefined}" == "finish" || "${3-undefined}" == "finish" ) ]]; then
                 usage
@@ -99,8 +110,7 @@ function git() {
             if [[ "$__git_override" == "true" ]]; then
                 # Hacky way to avoid an unbound error for an empty array.
                 # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-                #$(git rev-parse --show-toplevel)/.git/wize-flow/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
-                ~/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
+                "$(git rev-parse --show-toplevel)"/.git/wize-flow/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
                 __wize_flow_status=$?
             fi
             
@@ -132,3 +142,5 @@ function git() {
     ####### GIT FUNCTION END #######
 
 }
+
+export -f git
