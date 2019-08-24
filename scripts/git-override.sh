@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
-function git() {
+git()
+(
+    # Encapsulate logic inside sub-shell
 
     function usage() {
         echo "usage: git flow <feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [version-tag] [tag-message] --wize-flow"
     }
 
     function print_hints_banner() {
-    
+
         echo "------------------------- WizeFlow -------------------------"
         echo
-
         if [[ "${__git_status-1}" == 0 || "${__wize_flow_status-1}" == 0 ]]; then
             case "$__stage" in
                 start)
@@ -35,7 +36,7 @@ function git() {
         echo "------------------------- WizeFlow -------------------------"
                 
     }
-    
+
     function validate_wize_flow {
         local -r wize_flow_dir="$(git rev-parse --show-toplevel)"/.git/wize-flow
         if [[ ! -d "$wize_flow_dir" ]]; then
@@ -121,26 +122,19 @@ function git() {
     
     ####### GIT FUNCTION START #######
 
-    (
-        # Encapsulate logic inside sub-shell
-    
-        # We do not want the script to exit on failed scripts
-        set +o errexit
-        # We do not want to exit on error inside any functions or subshells.
-        set +o errtrace
-        # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
-        set -o nounset
-        # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
-        set -o pipefail
+    # We do not want the script to exit on failed scripts
+    set +o errexit
+    # We do not want to exit on error inside any functions or subshells.
+    set +o errtrace
+    # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+    set -o nounset
+    # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+    set -o pipefail
 
-        validate_inputs "$@"
-        run_git_flow
-        run_wize_flow
-
-    )
+    validate_inputs "$@"
+    run_git_flow
+    run_wize_flow
 
     ####### GIT FUNCTION END #######
 
-}
-
-export -f git
+)
