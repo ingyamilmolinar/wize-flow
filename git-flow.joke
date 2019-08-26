@@ -1,0 +1,13 @@
+(ns git-flow
+  (:require [joker.string :as str]
+            [joker.os :as os]))
+
+(def master-branch (-> (os/sh "git" "config" "--get" "gitflow.branch.master") :out str/trim))
+(def develop-branch (-> (os/sh "git" "config" "--get" "gitflow.branch.develop") :out str/trim))
+(def feature-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.feature") :out str/trim))
+(def bugfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.bugfix") :out str/trim))
+(def release-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.release") :out str/trim))
+(def hotfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.hotfix") :out str/trim))
+(def support-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.support") :out str/trim))
+
+(defn target-branch [current-branch] develop-branch)

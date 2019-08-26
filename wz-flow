@@ -1,0 +1,53 @@
+#!/usr/bin/env joker
+
+(ns wz-flow
+  (:require [git]
+            [git-flow]
+            [github]
+            [joker.string :as str]
+            [joker.os :as os]
+            [joker.yaml :as yaml]))
+
+(def config-file (str ((os/env) "HOME") "/.config/wz-flow"))
+
+; load config
+(when-not (os/exists? config-file)
+  (let [user (do (print "github.com username: ") (flush) (read-line))
+        pass (do (print "github.com password for" user "(never stored): ") (flush) (read-line)) ; todo: hide pass input
+        otp  (do (print "two-factor authentication code: ") (flush) (read-line))
+        [status resp] (github/personal-access-token user pass otp)]
+    (if (= 201 status)
+      (spit config-file (yaml/write-string {:github {:user user :token (resp "token")}}))
+      (do (pprint resp)
+          (os/exit -1)))))
+
+(def config (yaml/read-string (slurp config-file)))
+
+(if (not-any? #(= "finish" %) *command-line-args*)
+  ; call git flow command
+  (let [{:keys [out err]} (os/exec "git" {:args (cons "flow" *command-line-args*)})]
+    (if-not (str/blank? out)
+      (print out)
+      (print err)))
+  
+  ; we handle finish command by ourselves
+  (let [current-branch (git/current-branch)
+        target-branch (git-flow/target-branch current-branch)
+        [_ repo-owner repo-name] (git/repo-info)
+        [status resp] (github/pull-requests (get-in config ["github" "token"]) repo-owner repo-name current-branch target-branch)
+        pr (first resp)]
+    (cond
+      (not (re-matches #"^(feature|bugfix|release|hotfix|support)/.+" current-branch))      
+      (println "Incorrect argument: Branch name contains feature|bugfix|release|hotfix|support")
+      
+      (not= 200 status)
+      (pprint resp)
+      
+      (empty? resp)
+      (printf "No PR has been created from %v to %v on repository %v\n" current-branch target-branch repo-name)
+      
+      (nil? (pr "merged_at"))
+      (printf "The PR %v on repository %v has not been merged\n" (pr "number") repo-name)
+      
+      :else
+      (pprint current-branch))))
