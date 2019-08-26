@@ -17,7 +17,7 @@ This project intention is to build upon what `git-flow-avh` already provides in 
 
 ## Setup
 1. Clone this repo
-2. Setup the repository using the init script: `<wize-flow-repo-root>/scripts/wize-flow-init.sh <your-repo-path>`
+2. Setup the repository using the init script: `<wize-flow-repo-root>/scripts/wize-flow-init.sh <your-repo-path> <your-repo-remote-url>`
 3. Enjoy!
 
 ## Usage
