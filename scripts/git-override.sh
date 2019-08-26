@@ -5,7 +5,7 @@ git()
     # Encapsulate logic inside sub-shell
 
     function usage() {
-        echo "usage: git flow <feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [version-tag] [tag-message] --wize-flow"
+        echo "usage: git flow <feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [tag-version] --wize-flow"
     }
 
     function print_hints_banner() {
@@ -13,7 +13,7 @@ git()
         echo "------------------------- WizeFlow -------------------------"
         echo
         if [[ "${__git_status-1}" == 0 || "${__wize_flow_status-1}" == 0 ]]; then
-            case "$__stage" in
+            case "${__stage-undefined}" in
                 start)
                     echo "Next step: Implement, add and commit your changes and continue with 'git flow $__git_flow_type publish $__branch_name --wize-flow' when ready to submit PR"
                     ;;
@@ -37,6 +37,13 @@ git()
                 
     }
 
+    function contains_element () {
+        local e match="$1"
+        shift
+        for e; do [[ "$e" == "$match" ]] && return 0; done
+        return 1
+    }
+
     function validate_wize_flow {
         local -r wize_flow_dir="$(git rev-parse --show-toplevel)"/.git/wize-flow
         if [[ ! -d "$wize_flow_dir" ]]; then
@@ -50,45 +57,110 @@ git()
         __all_args=("$@")
         __git_override="false"
         __wize_flow_hints="false"
-        local git_verb="${1-undefined}"
+        local -r git_verb="${1-undefined}"
 
-        # If not going to call override script, return here
-        [[ "$git_verb" == "flow" && "${@:$#}" == "--wize-flow" ]] && __wize_flow_hints="true"
+        # If verb is not flow or wise-flow flag is not present, return to run normal git
+        if [[ "$git_verb" != "flow" || "${__all_args[${#__all_args[@]}-1]}" != "--wize-flow" ]]; then
+            return 
+        fi
 
-        [[ "$__wize_flow_hints" == "true" ]] && validate_wize_flow
+        validate_wize_flow
+        __wize_flow_hints="true"
+
+        # Remove wize-flow flag from the argument list
+        # Hacky stuff. For more info see: https://stackoverflow.com/questions/20398499/remove-last-argument-from-argument-list-of-shell-script-bash
+        set -- "${@:1:$(($#-1))}"
+        __all_args=("$@")
         
-        if [[ "$__wize_flow_hints" == "false" || ( "${2-undefined}" != "finish" && "${3-undefined}" != "finish" ) || (( "${2-undefined}" == "release" || "${2-undefined}" == "hotfix" ) && "$#" -lt 7 ) || (("${2-undefined}" == "feature" || "${2-undefined}" == "bugfix" ) && "$#" -lt 5 ) ]]; then
-            if [[ $__wize_flow_hints == "true" && ( "${2-undefined}" == "finish" || "${3-undefined}" == "finish" ) ]]; then
+        contains_element "show-usage" "${__all_args[@]}" && usage && exit 1
+
+        local will_override="false"
+        if contains_element "finish" "${__all_args[@]}"; then
+            will_override="true"
+        fi
+
+        # TODO: Consider case: 'git flow finish [tag] --wize-flow' when release or hotfix branch
+        case "${__all_args[1]-undefined}" in
+            feature|bugfix|release|hotfix)
+                __git_flow_type="${__all_args[1]}"
+                case "${__all_args[2]-undefined}" in
+                    start|publish|finish)
+                        __stage="${__all_args[2]}"
+                        ;;
+                    *)
+                        usage
+                        exit 1
+                        ;; 
+                esac 
+                local branch_provided=false
+                if [[ "${__all_args[3]-undefined}" != "undefined" ]]; then
+                    __branch_name="${__all_args[3]}"
+                    branch_provided=true
+                else
+                    __branch_name=$(git rev-parse --abbrev-ref head | sed "s:$__git_flow_type/::")
+                fi
+                if [[ "$will_override" == "true" && ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) ]]; then
+                    if [[ "$branch_provided" != "true" && "${#__all_args[@]}" == 3 ]]; then 
+                        __tag_version="${__all_args[2]}"
+                    elif [[ "$branch_provided" == "true" && "${#__all_args[@]}" == 4 ]]; then
+                        __tag_version="${__all_args[3]}"
+                    elif [[ "$branch_provided" == "true" && "${#__all_args[@]}" == 5 ]]; then
+                        __tag_version="${__all_args[4]}"
+                    else
+                        echo "tag-version is mandatory for $__git_flow_type branch" 1>&2
+                        usage
+                        exit 1
+                    fi
+                fi
+                ;;
+            start|publish|finish)
+                __git_flow_type=$(git rev-parse --abbrev-ref HEAD | grep -o '^[^\/]*')
+                __stage="${__all_args[1]}"
+                local branch_provided=false
+                if [[ "${__all_args[2]-undefined}" != "undefined" ]]; then
+                    __branch_name="${__all_args[2]}"
+                    branch_provided=true
+                else
+                    __branch_name=$(git rev-parse --abbrev-ref head | sed "s:$__git_flow_type/::")
+                fi
+                if [[ "$will_override" == "true" && ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) ]]; then
+                    if [[ "$branch_provided" != "true" && "${#__all_args[@]}" == 3 ]]; then                
+                        __tag_version="${__all_args[2]}"
+                    elif [[ "$branch_provided" == "true" && "${#__all_args[@]}" == 4 ]]; then
+                        __tag_version="${__all_args[3]}"
+                    elif [[ "$branch_provided" == "true" && "${#__all_args[@]}" == 5 ]]; then
+                        __tag_version="${__all_args[4]}"
+                    else
+                        echo "tag-version is mandatory for $__git_flow_type branch" 1>&2
+                        usage
+                        exit 1
+                    fi
+                fi
+                ;;
+            *)
                 usage
                 exit 1
-            fi
-            if [[ "$__wize_flow_hints" == "true" ]]; then
-                # TOFIX: Set this variables correctly when some are missing
-                __git_flow_type="${2-undefined}"
-                __stage="${3-undefined}"
-                __branch_name="${4-undefined}"
-                set -- "${@:1:$(($#-1))}"
-                __all_args=("$@")
-            fi
-            return
-        fi
+                ;;
+        esac
 
-        # If last argument is --wize-flow, remove it from the argument list
-        # Hacky stuff. For more info see: https://stackoverflow.com/questions/20398499/remove-last-argument-from-argument-list-of-shell-script-bash
-        if [[ "$__wize_flow_hints" == "true" ]]; then
-            set -- "${@:1:$(($#-1))}"
-            __all_args=("$@")
-        fi
+        case "$__git_flow_type" in
+            feature|bugfix|release|hotfix)
+                ;;
+            *)
+                echo "ERROR: $__git_flow_type should be feature|bugfix|release|hotfix" 1>&2
+                usage
+                exit 1
+                ;;
+        esac
+
+        # If no argument is finish, return and run normal git
+        [[ "$__stage" != "finish" ]] && return
 
         __git_override="true" 
-        __git_flow_type="$2"
-        __stage="$3"
-        __branch_name="$4"
-        __version_tag="${5-undefined}"
-        __tag_message="${6-undefined}"
         __all_args=("$__git_flow_type" "$__branch_name")
-        [[ "$__version_tag" != "undefined" ]] && __all_args=("${__all_args[@]}" "$__version_tag")
-        [[ "$__tag_message" != "undefined" ]] && __all_args=("${__all_args[@]}" "$__tag_message")
+        if [[ "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ]]; then
+             __all_args=("${__all_args[@]}" "$__tag_version")
+        fi
 
     }
 

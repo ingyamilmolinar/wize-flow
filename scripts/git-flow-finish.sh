@@ -2,7 +2,7 @@
 
 usage() {
 
-    echo "usage: $__script_name <feature|release|bugfix|hotfix> <branch-name> [version-tag] [tag-message]" 1>&2 
+    echo "usage: $__script_name <feature|release|bugfix|hotfix> <branch-name> [tag-version]" 1>&2 
     exit 1
 
 }
@@ -12,8 +12,7 @@ validate_inputs() {
     readonly __script_name="$0"
     readonly __git_flow_type="${1-undefined}"
     readonly __branch_name="${2-undefined}"
-    readonly __version_tag="${3-undefined}"
-    readonly __tag_message="${4-undefined}"
+    readonly __tag_version="${3-undefined}"
 
     if [[ "$__git_flow_type" == "undefined" ]]; then 
         echo "Not enough arguments: GitFlow workflow is mandatory" 1>&2
@@ -32,17 +31,17 @@ validate_inputs() {
         fi
     fi
 
-    if [[ ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) && ( "$__version_tag" == "undefined" || "$__tag_message" == "undefined" ) ]]; then
-        echo "Not enough arguments: Version tag and tag message are mandatory for release|hotfix workflows" 1>&2
+    if [[ ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) && "$__tag_version" == "undefined" ]]; then
+        echo "Not enough arguments: Version tag is mandatory for release|hotfix workflows" 1>&2
         usage
     fi
 
-    if [[ "$__version_tag" != "undefined" && ( "$__git_flow_type" != "release" && "$__git_flow_type" != "hotfix" ) ]]; then
-        echo "Version tag and tag message are only required for release|hotfix workflows" 1>&2
+    if [[ "$__tag_version" != "undefined" && ( "$__git_flow_type" != "release" && "$__git_flow_type" != "hotfix" ) ]]; then
+        echo "Version tag is only required for release|hotfix workflows" 1>&2
         usage
     fi
 
-    local -r max_amount_of_args=4
+    local -r max_amount_of_args=3
     if [[ "$#" > "$max_amount_of_args" ]]; then
         echo "Too many arguments: $# is greater thant the maximum amount of arguments supported" 1>&2
         usage
@@ -119,7 +118,8 @@ set_git_flow_opts() {
     __git_flow_finish_options=()
     case "$__git_flow_type" in
         release|hotfix)
-            __git_flow_finish_options=("--tagname" "$__version_tag" "--message" "$__tag_message")
+            # TOFIX: We are using tag-version for the tag-message too
+            __git_flow_finish_options=("--tagname" "$__tag_version" "--message" "$__tag_version")
             ;;
     esac
 
@@ -140,7 +140,7 @@ sync_base_branch() {
 exec_git_flow_finish() {
     # Hacky way to avoid an unbound error for an empty array.
     # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-    AUTOMATED_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" ${__git_flow_finish_options[@]+"${__git_flow_finish_options[@]}"}
+    AUTOMATED_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
 
 }
 
