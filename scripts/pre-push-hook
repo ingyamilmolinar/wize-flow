@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+readonly wize_flow_dir="$(git rev-parse --show-toplevel)"/.git/wize-flow
+if [[ ! -d "$wize_flow_dir" ]]; then
+    echo "Wize-flow was not initialized correctly. Run 'rm -r .git/wize-flow' and run initialization script again."
+    exit 1
+fi
+"$wize_flow_dir"/pre-push-script || exit $?

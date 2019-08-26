@@ -8,7 +8,7 @@ git config gitflow.feature.finish.no-ff yes
 git config gitflow.release.start.fetch yes
 git config gitflow.release.finish.fetch yes
 git config gitflow.release.finish.push yes
-git config gitflow.release.finish.noff-master yes
+git config gitflow.release.finish.ff-master no
 
 git config gitflow.bugfix.start.fetch yes
 git config gitflow.bugfix.finish.fetch yes
