@@ -140,7 +140,7 @@ sync_base_branch() {
 exec_git_flow_finish() {
     # Hacky way to avoid an unbound error for an empty array.
     # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-    AUTOMATED_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
+    FORCE_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
 
 }
 
