@@ -1,7 +1,7 @@
 #!/usr/bin/env joker
 
 (ns wz-flow
-  (:require [git]
+  (:require [git :refer [repo current-branch]]
             [git-flow]
             [github]
             [joker.string :as str]
@@ -12,13 +12,13 @@
 
 ; load config
 (when-not (os/exists? config-file)
-  (let [user (do (print "github.com username: ") (flush) (read-line))
-        pass (do (print "github.com password for" user "(never stored): ") (flush) (read-line)) ; todo: hide pass input
-        otp  (do (print "two-factor authentication code: ") (flush) (read-line))
+  (let [user (do (print "github.com username: ") (read-line))
+        pass (do (print "github.com password for" user "(never stored): ") (read-line)) ; todo: hide pass input
+        otp  (do (print "two-factor authentication code: ") (read-line))
         [status resp] (github/personal-access-token user pass otp)]
     (if (= 201 status)
       (spit config-file (yaml/write-string {:github {:user user :token (resp "token")}}))
-      (do (pprint resp)
+      (do (github/display-error resp)
           (os/exit -1)))))
 
 (def config (yaml/read-string (slurp config-file)))
@@ -26,28 +26,24 @@
 (if (not-any? #(= "finish" %) *command-line-args*)
   ; call git flow command
   (let [{:keys [out err]} (os/exec "git" {:args (cons "flow" *command-line-args*)})]
-    (if-not (str/blank? out)
-      (print out)
-      (print err)))
+    (print (if (str/blank? out) err out)))
   
   ; we handle finish command by ourselves
-  (let [current-branch (git/current-branch)
-        target-branch (git-flow/merge->branch current-branch)
-        [_ repo-owner repo-name] (git/repo-info)
-        [status resp] (github/pull-requests (get-in config ["github" "token"]) repo-owner repo-name current-branch target-branch)
-        pr (first resp)]
-    (cond
-      (not (git-flow/working-branch? current-branch))
-      (println "The current HEAD is no feature branch.")
-      
-      (not= 200 status)
-      (pprint resp)
-      
-      (empty? resp)
-      (printf "No PR has been created from %v to %v on repository %v.\n" current-branch target-branch repo-name)
-      
-      (nil? (pr "merged_at"))
-      (printf "The PR #%v on repo %v/%v has not been merged yet.\n" (pr "number") repo-owner repo-name)
-      
-      :else
-      (pprint current-branch))))
+  (if-not (git-flow/working-branch? current-branch)
+    (println "The current HEAD is no feature branch.")
+    
+    (let [target-branch (git-flow/merge->branch current-branch)
+          [status resp] (github/pull-requests (get-in config ["github" "token"]) (:owner repo) (:name repo) current-branch target-branch)
+          pr (first resp)]
+      (cond
+        (not= 200 status)
+        (github/display-error resp)
+
+        (empty? resp)
+        (printf "No PR has been created from %v to %v on repository %v.\n" current-branch target-branch (:name repo))
+
+        (nil? (pr "merged_at"))
+        (printf "The PR #%v on repo %v/%v has not been merged yet.\n" (pr "number") (:owner repo) (:name repo))
+
+        :else
+        (pprint current-branch)))))

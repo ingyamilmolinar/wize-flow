@@ -27,3 +27,7 @@
   (let [{:keys [status body]} (http/send {:url (format "%s/repos/%s/%s/pulls?state=all&head=%s:%s&base=%s" base-url owner repo owner head base)
                                           :headers {"Authorization" (str "token " token)}})]
     [status (json/read-string body)]))
+
+(defn display-error [error]
+  (println-err "GitHub" (error "message"))
+  (println-err "Ref" (error "documentation_url")))

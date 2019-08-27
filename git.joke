@@ -2,10 +2,9 @@
   (:require [joker.string :as str]
             [joker.os :as os]))
 
-(defn repo-info
-  "Return repo url, owner & name"
-  []
-  (let [repo-url (-> (os/sh "git" "config" "--get" "remote.origin.url") :out str/trim)]
-    (re-matches #".+:(.+)/(.+)\.git" repo-url)))
+(def repo "Repo info"
+  (let [repo-url (-> (os/sh "git" "config" "--get" "remote.origin.url") :out str/trim)
+        [url owner name] (re-matches #".+:(.+)/(.+)\.git" repo-url)]
+    {:url url :owner owner :name name}))
 
-(defn current-branch [] (-> (os/sh "git" "symbolic-ref" "--short" "HEAD") :out str/trim))
+(def current-branch (-> (os/sh "git" "symbolic-ref" "--short" "HEAD") :out str/trim))
