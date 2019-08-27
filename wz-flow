@@ -32,22 +32,22 @@
   
   ; we handle finish command by ourselves
   (let [current-branch (git/current-branch)
-        target-branch (git-flow/target-branch current-branch)
+        target-branch (git-flow/merge->branch current-branch)
         [_ repo-owner repo-name] (git/repo-info)
         [status resp] (github/pull-requests (get-in config ["github" "token"]) repo-owner repo-name current-branch target-branch)
         pr (first resp)]
     (cond
-      (not (re-matches #"^(feature|bugfix|release|hotfix|support)/.+" current-branch))      
-      (println "Incorrect argument: Branch name contains feature|bugfix|release|hotfix|support")
+      (not (git-flow/working-branch? current-branch))
+      (println "The current HEAD is no feature branch.")
       
       (not= 200 status)
       (pprint resp)
       
       (empty? resp)
-      (printf "No PR has been created from %v to %v on repository %v\n" current-branch target-branch repo-name)
+      (printf "No PR has been created from %v to %v on repository %v.\n" current-branch target-branch repo-name)
       
       (nil? (pr "merged_at"))
-      (printf "The PR %v on repository %v has not been merged\n" (pr "number") repo-name)
+      (printf "The PR #%v on repo %v/%v has not been merged yet.\n" (pr "number") repo-owner repo-name)
       
       :else
       (pprint current-branch))))

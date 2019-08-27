@@ -2,7 +2,6 @@
   (:require [joker.base64 :as base64]
             [joker.json :as json]
             [joker.http :as http]
-            [joker.string :as str]
             [joker.time :as t]))
 
 (def base-url "https://api.github.com")

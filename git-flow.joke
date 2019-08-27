@@ -10,4 +10,22 @@
 (def hotfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.hotfix") :out str/trim))
 (def support-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.support") :out str/trim))
 
-(defn target-branch [current-branch] develop-branch)
+(defn working-branch? [branch]
+  (or (str/starts-with? branch feature-branch)
+      (str/starts-with? branch bugfix-branch)
+      (str/starts-with? branch release-branch)
+      (str/starts-with? branch hotfix-branch)
+      (str/starts-with? branch support-branch)))
+
+(defn merge->branch
+  "Return target branch to merge from current branch"
+  [current-branch]
+  (cond
+    (or (str/starts-with? current-branch feature-branch)
+        (str/starts-with? current-branch bugfix-branch))
+    develop-branch
+    
+    (or (str/starts-with? current-branch release-branch)
+        (str/starts-with? current-branch hotfix-branch)
+        (str/starts-with? current-branch support-branch))
+    master-branch))
