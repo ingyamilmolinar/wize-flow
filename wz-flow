@@ -9,6 +9,7 @@
             [joker.yaml :as yaml]))
 
 (def config-file (str ((os/env) "HOME") "/.config/wz-flow"))
+(defn- exit [msg] (println msg) (os/exit -1))
 
 ; load config
 (when-not (os/exists? config-file)
@@ -18,32 +19,28 @@
         [status resp] (github/personal-access-token user pass otp)]
     (if (= 201 status)
       (spit config-file (yaml/write-string {:github {:user user :token (resp "token")}}))
-      (do (github/display-error resp)
-          (os/exit -1)))))
+      (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url"))))))
 
 (def config (yaml/read-string (slurp config-file)))
 
-(if (not-any? #(= "finish" %) *command-line-args*)
-  ; call git flow command
-  (let [{:keys [out err]} (os/exec "git" {:args (cons "flow" *command-line-args*)})]
-    (print (if (str/blank? out) err out)))
-  
-  ; we handle finish command by ourselves
+; do some check on finish command
+(when (some #(= "finish" %) *command-line-args*)
   (if-not (git-flow/working-branch? current-branch)
-    (println "The current HEAD is no feature branch.")
+    (exit "The current HEAD is no feature branch.")
     
     (let [target-branch (git-flow/merge->branch current-branch)
           [status resp] (github/pull-requests (get-in config ["github" "token"]) (:owner repo) (:name repo) current-branch target-branch)
           pr (first resp)]
       (cond
         (not= 200 status)
-        (github/display-error resp)
-
+        (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
+        
         (empty? resp)
-        (printf "No PR has been created from %v to %v on repository %v.\n" current-branch target-branch (:name repo))
-
+        (exit (format "No PR has been created from %v to %v on repository %v." current-branch target-branch (:name repo)))
+        
         (nil? (pr "merged_at"))
-        (printf "The PR #%v on repo %v/%v has not been merged yet.\n" (pr "number") (:owner repo) (:name repo))
+        (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))))))
 
-        :else
-        (pprint current-branch)))))
+; call git-flow command
+(let [{:keys [out err]} (os/exec "git-flow" {:args *command-line-args*})]
+  (print (if (str/blank? out) err out)))

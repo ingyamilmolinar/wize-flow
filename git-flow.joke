@@ -17,6 +17,15 @@
       (str/starts-with? branch hotfix-branch)
       (str/starts-with? branch support-branch)))
 
+(defn prefix [branch-type]
+  (case branch-type
+    "feature" feature-branch
+    "bugfix"  bugfix-branch
+    "release" release-branch
+    "hotfix"  hotfix-branch
+    "support" support-branch
+    ""))
+
 (defn merge->branch
   "Return target branch to merge from current branch"
   [current-branch]
