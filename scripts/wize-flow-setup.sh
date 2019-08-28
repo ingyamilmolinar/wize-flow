@@ -31,22 +31,27 @@ function install() {
         git fetch &>/dev/null
     fi
 
+    if [[ ! -z $(git status 2>&1 | grep -e 'not staged' -e 'to be committed') ]]; then
+        echo "Your current git index and staging should be empty. Commit or reset your changes first." 1>&2
+        exit 1
+    fi
+
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
     if [[ ! -z $(git branch -a | grep 'remotes/origin/develop') ]]; then
         echo "Pulling remote develop branch..."
-        git checkout develop
-        if [[ ! -z $(git pull origin develop 2>&1 | grep 'unrelated histories') ]]; then
-            echo "Your local and remote 'develop' branch have unrelated histories. Please verify and try again" 1>&2
+        if [[ ! -z $(git checkout develop 2>&1 | grep 'error') || ! -z $(git pull origin develop 2>&1 | grep -e 'error' -e 'fatal') ]]; then
+            echo "There was an issue pulling develop branch. Please verify and try again" 1>&2
             exit 1
         fi
     fi
     if [[ ! -z $(git branch -a | grep 'remotes/origin/master') ]]; then
         echo "Pulling remote master branch..."
-        git checkout master
-        if [[ ! -z $(git pull origin master 2>&1 | grep 'unrelated histories') ]]; then
-            echo "Your local and remote 'master' branch have unrelated histories. Please verify and try again" 1>&2
+        if [[ ! -z $(git checkout master 2>&1 | grep 'error') || ! -z $(git pull origin master 2>&1 | grep -e 'error' -e 'fatal') ]]; then
+            echo "There was an issue pulling master branch. Please verify and try again" 1>&2
             exit 1
         fi
     fi
+    git checkout "$current_branch" &>/dev/null
 
     if [[ ! -z $(git log 2>&1 | grep 'does not have any commits yet') ]]; then
         echo "Your current branch does not have any commits yet. Commiting README.md..."
