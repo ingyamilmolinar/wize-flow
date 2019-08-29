@@ -10,6 +10,8 @@
 (def hotfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.hotfix") :out str/trim))
 (def support-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.support") :out str/trim))
 
+(def version (-> (os/sh "git" "flow" "version") :out str/trim))
+
 (defn working-branch? [branch]
   (or (str/starts-with? branch feature-branch)
       (str/starts-with? branch bugfix-branch)

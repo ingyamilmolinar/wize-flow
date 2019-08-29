@@ -41,6 +41,11 @@
         (nil? (pr "merged_at"))
         (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))))))
 
+(when (= "version" (first *command-line-args*))
+  (println "git-flow" git-flow/version)
+  (println "wize-flow 0.0.1")
+  (os/exit -1))
+
 ; call git-flow command
 (let [{:keys [out err]} (os/exec "git-flow" {:args *command-line-args*})]
   (print (-> (if (str/blank? out) err out)
