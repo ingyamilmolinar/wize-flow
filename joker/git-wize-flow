@@ -8,7 +8,7 @@
             [joker.os :as os]
             [joker.yaml :as yaml]))
 
-(def config-file (str ((os/env) "HOME") "/.config/wz-flow"))
+(def config-file (str ((os/env) "HOME") "/.config/wize-flow"))
 (defn- exit [msg] (println msg) (os/exit -1))
 
 ; load config
@@ -43,4 +43,5 @@
 
 ; call git-flow command
 (let [{:keys [out err]} (os/exec "git-flow" {:args *command-line-args*})]
-  (print (if (str/blank? out) err out)))
+  (print (-> (if (str/blank? out) err out)
+             (str/replace "git flow" "git wize-flow"))))
