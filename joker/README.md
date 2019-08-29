@@ -1,3 +1,5 @@
+# wize-flow
+
 ## Dependencies
 - git
 - [git-flow-avh](https://github.com/petervanderdoes/gitflow-avh)
@@ -8,6 +10,7 @@
 # install dependencies
 $ brew install git-flow-avh
 $ brew install joker
+
 # clone the repo & add script to the $PATH
 $ git clone git@github.com:wizeline/wize-flow.git
 $ export PATH=<path-to>/wize-flow/joker:$PATH
@@ -31,3 +34,4 @@ Available subcommands are:
 
 Try 'git wize-flow <subcommand> help' for details.
 ```
+Enjoy!
