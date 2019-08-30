@@ -44,9 +44,10 @@
 (when (= "version" (first *command-line-args*))
   (println "git-flow" git-flow/version)
   (println "wize-flow 0.0.1")
-  (os/exit -1))
+  (os/exit 0))
 
 ; call git-flow command
-(let [{:keys [out err]} (os/exec "git-flow" {:args *command-line-args*})]
+(let [{:keys [out err exit]} (os/exec "git-flow" {:args *command-line-args*})]
   (print (-> (if (str/blank? out) err out)
-             (str/replace "git flow" "git wize-flow"))))
+             (str/replace "git flow" "git wize-flow")))
+  (os/exit exit))
