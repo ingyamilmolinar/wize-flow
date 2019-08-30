@@ -1,0 +1,42 @@
+(ns git-flow
+  (:require [joker.string :as str]
+            [joker.os :as os]))
+
+(def master-branch (-> (os/sh "git" "config" "--get" "gitflow.branch.master") :out str/trim))
+(def develop-branch (-> (os/sh "git" "config" "--get" "gitflow.branch.develop") :out str/trim))
+(def feature-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.feature") :out str/trim))
+(def bugfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.bugfix") :out str/trim))
+(def release-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.release") :out str/trim))
+(def hotfix-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.hotfix") :out str/trim))
+(def support-branch (-> (os/sh "git" "config" "--get" "gitflow.prefix.support") :out str/trim))
+
+(def version (-> (os/sh "git" "flow" "version") :out str/trim))
+
+(defn working-branch? [branch]
+  (or (str/starts-with? branch feature-branch)
+      (str/starts-with? branch bugfix-branch)
+      (str/starts-with? branch release-branch)
+      (str/starts-with? branch hotfix-branch)
+      (str/starts-with? branch support-branch)))
+
+(defn prefix [branch-type]
+  (case branch-type
+    "feature" feature-branch
+    "bugfix"  bugfix-branch
+    "release" release-branch
+    "hotfix"  hotfix-branch
+    "support" support-branch
+    ""))
+
+(defn merge->branch
+  "Return target branch to merge from current branch"
+  [current-branch]
+  (cond
+    (or (str/starts-with? current-branch feature-branch)
+        (str/starts-with? current-branch bugfix-branch))
+    develop-branch
+    
+    (or (str/starts-with? current-branch release-branch)
+        (str/starts-with? current-branch hotfix-branch)
+        (str/starts-with? current-branch support-branch))
+    master-branch))

@@ -1,0 +1,12 @@
+(ns git
+  (:require [joker.string :as str]
+            [joker.os :as os]))
+
+(def repo "Repo info"
+  (let [repo-url (-> (os/sh "git" "config" "--get" "remote.origin.url") :out str/trim)
+        [url owner name] (re-matches #".+:(.+)/(.+)\.git" repo-url)]
+    {:url url :owner owner :name name}))
+
+(def current-branch (-> (os/sh "git" "symbolic-ref" "--short" "HEAD") :out str/trim))
+
+(defn branch-exists? [name] (:success (os/sh "git" "show-ref" "--verify" "--quiet" (str "refs/heads/" name))))
