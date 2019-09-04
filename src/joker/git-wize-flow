@@ -39,7 +39,10 @@
       (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
 
       (empty? resp)
-      (exit (format "No PR has been created from %v to %v on repo %v/%v." current-branch target-branch (:owner repo) (:name repo)))
+      (exit (format "No PR has been created from %v to %v on repo %v/%v.
+Open a PR: https://github.com/%v/%v/compare/%v?expand=1"
+                    current-branch target-branch (:owner repo) (:name repo)
+                    (:owner repo) (:name repo) current-branch))
 
       (nil? (pr "merged_at"))
       (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))
