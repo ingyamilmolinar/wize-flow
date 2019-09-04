@@ -10,3 +10,8 @@
 (def current-branch (-> (os/sh "git" "symbolic-ref" "--short" "HEAD") :out str/trim))
 
 (defn branch-exists? [name] (:success (os/sh "git" "show-ref" "--verify" "--quiet" (str "refs/heads/" name))))
+
+(defn sync-base [head base]
+  (os/sh "git" "checkout" base)
+  (os/sh "git" "pull" "origin" base)
+  (os/sh "git" "checkout" head))
