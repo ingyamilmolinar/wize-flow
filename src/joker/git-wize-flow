@@ -1,0 +1,48 @@
+#!/usr/bin/env joker
+
+(ns wz-flow
+  (:require [config :refer [load-config]]
+            [git :refer [repo current-branch]]
+            [git-flow]
+            [github]
+            [joker.string :as str]
+            [joker.os :as os]))
+
+(defn- exit [msg] (println msg) (os/exit -1))
+
+(defn- exec-git-flow
+  "Call git-flow command"
+  [args]
+  (let [{:keys [out err exit]} (os/exec "git-flow" {:args args})]
+    (print (-> (if (str/blank? out) err out)
+               (str/replace "git flow" "git wize-flow")))
+    (os/exit exit)))
+
+(cond
+  (= "version" (first *command-line-args*))
+  (do (println "git-flow" git-flow/version)
+      (println "wize-flow 0.0.1"))
+  
+  (not-any? #(= "finish" %) *command-line-args*)
+  (exec-git-flow *command-line-args*)
+  
+  (not (git-flow/working-branch? current-branch))
+  (exit "The current HEAD is no feature branch.")
+  
+  :else
+  (let [config (load-config)
+        target-branch (git-flow/merge->branch current-branch)
+        [status resp] (github/pull-requests (get-in config ["github" "token"]) (:owner repo) (:name repo) current-branch target-branch)
+        pr (first resp)]
+    (cond
+      (not= 200 status)
+      (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
+
+      (empty? resp)
+      (exit (format "No PR has been created from %v to %v on repo %v/%v." current-branch target-branch (:owner repo) (:name repo)))
+
+      (nil? (pr "merged_at"))
+      (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))
+      
+      :else
+      (exec-git-flow *command-line-args*))))

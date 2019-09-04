@@ -24,3 +24,8 @@ This project intention is to build upon what `git-flow-avh` already provides in 
 For `git-flow-avh` usage refer to the [cheatsheet](https://danielkummer.github.io/git-flow-cheatsheet/). `git-flow-avh` capabilities for `start`, `publish`, `pull` [discouraged](https://github.com/petervanderdoes/gitflow-avh/issues/128) and `track` commands are untouched. The `finish` command was changed so that now it expects a `merged` PR according to Wizeline practices to continue the back-merge, tagging and cleanup process.
 
 For an opinionated guide on how to achieve the different types of workflows using `wize-flow`, check [this](https://docs.google.com/document/d/1gsLuBmR-eGTYKfYwJ5ZxJLVWlO6cA7Jdr5REDV2Y_ZQ/edit?usp=sharing) out!
+
+## Development
+### Testing
+- Install [bats](https://github.com/bats-core/bats-core/)
+- Run test `./run-test.sh <bash|joker>`

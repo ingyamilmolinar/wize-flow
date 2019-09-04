@@ -9,11 +9,11 @@
 ```sh
 # install dependencies
 $ brew install git-flow-avh
-$ brew install joker
+$ brew install candid82/brew/joker
 
 # clone the repo & add script to the $PATH
 $ git clone git@github.com:wizeline/wize-flow.git
-$ export PATH=<path-to>/wize-flow/joker:$PATH
+$ export PATH=<path-to>/wize-flow/src/joker:$PATH
 ```
 
 ## Usage
