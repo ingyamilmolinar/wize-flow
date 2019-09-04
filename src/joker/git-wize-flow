@@ -45,4 +45,7 @@
       (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))
       
       :else
-      (exec-git-flow *command-line-args*))))
+      (do (git/sync-base current-branch target-branch)
+          (when (not= git-flow/develop-branch target-branch)
+            (git/sync-base current-branch git-flow/develop-branch))
+          (exec-git-flow *command-line-args*)))))
