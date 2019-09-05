@@ -37,9 +37,9 @@
         pr (first resp)
         last-commit (git/last-commit current-branch target-branch)
         pr-commits (github/pull-request-commits token (:owner repo) (:name repo) (get pr "number"))
-        reviewers (->> (get pr "requested_reviewers")
-                       (map #(get % "login"))
-                       (str/join ", "))]
+        pr-reviewers (->> (get pr "requested_reviewers")
+                          (map #(get % "login"))
+                          (str/join ", "))]
     (cond
       (not= 200 status)
       (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
@@ -57,7 +57,7 @@ Url:       %v
 State:     %v
 Reviewers: %v"
                     (pr "number") (:owner repo) (:name repo)
-                    (pr "html_url") (pr "state") reviewers))
+                    (pr "html_url") (pr "state") pr-reviewers))
       
       :else
       (do (git/sync-base current-branch target-branch)
