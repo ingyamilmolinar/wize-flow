@@ -1,0 +1,2 @@
+**/*.joke linguist-language=Clojure
+src/joker/git-wize-flow linguist-language=Clojure

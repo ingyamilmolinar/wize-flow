@@ -22,7 +22,8 @@
     [status (json/read-string body)]))
 
 (defn pull-requests
-  "Get the PRs from head -> base, order by created desc"
+  "Get the PRs from head -> base, order by created desc
+  https://developer.github.com/v3/pulls/#list-pull-requests"
   [token owner repo head base]
   (let [{:keys [status body]} (http/send {:url (format "%s/repos/%s/%s/pulls?state=all&head=%s:%s&base=%s" base-url owner repo owner head base)
                                           :headers {"Authorization" (str "token " token)}})]
