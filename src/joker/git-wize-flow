@@ -31,21 +31,33 @@
   
   :else
   (let [config (load-config)
+        token (get-in config ["github" "token"])
         target-branch (git-flow/merge->branch current-branch)
-        [status resp] (github/pull-requests (get-in config ["github" "token"]) (:owner repo) (:name repo) current-branch target-branch)
-        pr (first resp)]
+        [status resp] (github/pull-requests token (:owner repo) (:name repo) current-branch target-branch)
+        pr (first resp)
+        last-commit (git/last-commit current-branch target-branch)
+        pr-commits (github/pull-request-commits token (:owner repo) (:name repo) (get pr "number"))
+        reviewers (->> (get pr "requested_reviewers")
+                       (map #(get % "login"))
+                       (str/join ", "))]
     (cond
       (not= 200 status)
       (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
 
-      (empty? resp)
+      (or (empty? resp)
+          (not (contains? pr-commits last-commit)))
       (exit (format "No PR has been created from %v to %v on repo %v/%v.
-Open a PR: https://github.com/%v/%v/compare/%v?expand=1"
+Open a PR: https://github.com/%v/%v/compare/%v...%v?expand=1"
                     current-branch target-branch (:owner repo) (:name repo)
-                    (:owner repo) (:name repo) current-branch))
+                    (:owner repo) (:name repo) target-branch current-branch))
 
       (nil? (pr "merged_at"))
-      (exit (format "The PR #%v on repo %v/%v has not been merged yet." (pr "number") (:owner repo) (:name repo)))
+      (exit (format "The PR #%v on repo %v/%v has not been merged yet.
+Url:       %v
+State:     %v
+Reviewers: %v"
+                    (pr "number") (:owner repo) (:name repo)
+                    (pr "html_url") (pr "state") reviewers))
       
       :else
       (do (git/sync-base current-branch target-branch)

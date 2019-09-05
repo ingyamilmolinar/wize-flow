@@ -15,3 +15,10 @@
   (os/sh "git" "checkout" base)
   (os/sh "git" "pull" "origin" base)
   (os/sh "git" "checkout" head))
+
+(defn last-commit
+  "Return last commit hash of a branch"
+  [branch base]
+  (-> (os/sh "git" "log" (str base ".." branch) "--date-order" "--pretty=%H" "-1")
+      :out
+      str/trim))
