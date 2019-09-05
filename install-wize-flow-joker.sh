@@ -13,6 +13,6 @@ brew install candid82/brew/joker &>/dev/null
 
 echo "Installing wize-flow..."
 cp -r src/joker /usr/local/opt/wize-flow
-cp -f src/joker/wize-flow /usr/local/bin/git-wize-flow
+cp -f git-wize-flow /usr/local/bin
 
 echo "Successfully installed wize-flow! Try 'git wize-flow -h' for usage."
