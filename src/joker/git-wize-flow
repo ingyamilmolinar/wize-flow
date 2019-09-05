@@ -18,28 +18,36 @@
                (str/replace "git flow" "git wize-flow")))
     (os/exit exit)))
 
+(def target-branch (git-flow/merge->branch current-branch))
+
 (cond
   (= "version" (first *command-line-args*))
   (do (println "git-flow" git-flow/version)
       (println "wize-flow 0.0.1"))
   
-  (not-any? #(= "finish" %) *command-line-args*)
+  (not-any? #{"publish" "finish"} *command-line-args*)
   (exec-git-flow *command-line-args*)
   
   (not (git-flow/working-branch? current-branch))
   (exit "The current HEAD is no feature branch.")
   
+  (= "publish" (first *command-line-args*))
+  (let [{:keys [out err exit]} (os/exec "git-flow" {:args *command-line-args*})]
+    (println (if (str/blank? out)
+               err
+               (str out "Open a PR: https://github.com/" (:owner repo) "/" (:name repo) "/compare/" target-branch "..." current-branch "?expand=1\n")))
+    (os/exit exit))
+  
   :else
   (let [config (load-config)
         token (get-in config ["github" "token"])
-        target-branch (git-flow/merge->branch current-branch)
         [status resp] (github/pull-requests token (:owner repo) (:name repo) current-branch target-branch)
         pr (first resp)
         last-commit (git/last-commit current-branch target-branch)
         pr-commits (github/pull-request-commits token (:owner repo) (:name repo) (get pr "number"))
-        reviewers (->> (get pr "requested_reviewers")
-                       (map #(get % "login"))
-                       (str/join ", "))]
+        pr-reviewers (->> (get pr "requested_reviewers")
+                          (map #(get % "login"))
+                          (str/join ", "))]
     (cond
       (not= 200 status)
       (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
@@ -57,7 +65,7 @@ Url:       %v
 State:     %v
 Reviewers: %v"
                     (pr "number") (:owner repo) (:name repo)
-                    (pr "html_url") (pr "state") reviewers))
+                    (pr "html_url") (pr "state") pr-reviewers))
       
       :else
       (do (git/sync-base current-branch target-branch)
