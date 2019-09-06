@@ -8,7 +8,7 @@
             [joker.string :as str]
             [joker.os :as os]))
 
-(defn- exit [msg] (println msg) (os/exit -1))
+(defn- exit [msg & args] (apply printf msg args) (os/exit -1))
 
 (defn- exec-git-flow
   "Call git-flow command"
@@ -54,18 +54,22 @@
 
       (or (empty? resp)
           (not (contains? pr-commits last-commit)))
-      (exit (format "No PR has been created from %v -> %v on repo %v/%v.\n
-Open a PR: https://github.com/%v/%v/compare/%v...%v?expand=1\n"
-                    current-branch target-branch (:owner repo) (:name repo)
-                    (:owner repo) (:name repo) target-branch current-branch))
+      (exit "No PR has been created from %v -> %v on repo %v/%v.
+
+Open a PR: https://github.com/%v/%v/compare/%v...%v?expand=1
+
+"           current-branch target-branch (:owner repo) (:name repo)
+            (:owner repo) (:name repo) target-branch current-branch)
 
       (nil? (:merged_at pr))
-      (exit (format "The PR #%v on repo %v/%v has not been merged yet.
+      (exit "The PR #%v on repo %v/%v has not been merged yet.
+
 Url:       %v
 State:     %v
-Reviewers: %v"
-                    (:number pr) (:owner repo) (:name repo)
-                    (:html_url pr) (:state pr) reviewers))
+Reviewers: %v
+
+"           (:number pr) (:owner repo) (:name repo)
+            (:html_url pr) (:state pr) reviewers)
       
       :else
       (do (git/sync-base current-branch target-branch)
