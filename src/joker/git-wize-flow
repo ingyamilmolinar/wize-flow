@@ -50,7 +50,7 @@
                                (str/join ", "))]
     (cond
       (not= 200 status)
-      (exit (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
+      (exit "GitHub %v\n%v\n\n" (:message resp) (:documentation_url resp))
 
       (or (empty? resp)
           (not (contains? pr-commits last-commit)))
