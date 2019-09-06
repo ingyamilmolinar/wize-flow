@@ -59,7 +59,7 @@ Open a PR: https://github.com/%v/%v/compare/%v...%v?expand=1\n"
                     current-branch target-branch (:owner repo) (:name repo)
                     (:owner repo) (:name repo) target-branch current-branch))
 
-      (nil? (pr "merged_at"))
+      (nil? (:merged_at pr))
       (exit (format "The PR #%v on repo %v/%v has not been merged yet.
 Url:       %v
 State:     %v
