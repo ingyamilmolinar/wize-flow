@@ -2,7 +2,8 @@
   (:require [joker.base64 :as base64]
             [joker.json :as json]
             [joker.http :as http]
-            [joker.time :as t]))
+            [joker.time :as t]
+            [joker.walk :refer [keywordize-keys]]))
 
 (def base-url "https://api.github.com")
 
@@ -27,7 +28,7 @@
   [token owner repo head base]
   (let [{:keys [status body]} (http/send {:url (format "%s/repos/%s/%s/pulls?state=all&head=%s:%s&base=%s" base-url owner repo owner head base)
                                           :headers {"Authorization" (str "token " token)}})]
-    [status (json/read-string body)]))
+    [status (-> body json/read-string keywordize-keys)]))
 
 (defn pull-request-commits
   "List commits on a pull request"
@@ -36,5 +37,5 @@
                    :headers {"Authorization" (str "token " token)}})
        :body
        json/read-string
-       (map #(get % "sha"))
+       (map #(% "sha"))
        set))

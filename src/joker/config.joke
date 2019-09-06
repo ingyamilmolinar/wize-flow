@@ -1,7 +1,8 @@
 (ns config
   (:require [joker.os :as os]
             [joker.yaml :as yaml]
-            [github]))
+            [github]
+            [joker.walk :refer [keywordize-keys]]))
 
 (def config-file (str ((os/env) "HOME") "/.config/wize-flow"))
 
@@ -16,4 +17,4 @@
         (do (println (str "GitHub " (resp "message") "\n" (resp "documentation_url")))
             (os/exit -1)))))
   
-  (yaml/read-string (slurp config-file)))
+  (-> config-file slurp yaml/read-string keywordize-keys))
