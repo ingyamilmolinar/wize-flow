@@ -2,7 +2,12 @@
 
 function usage() {
     #TODO: More git-like usage
-    echo "usage: git wize-flow <feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [tag-version]"
+    echo "usage: git wize-flow <version|init|remove|feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [tag-version]"
+}
+
+function version() {
+    #TODO: This should be replaced by the src/<stack>/version file contents
+    echo "0.1.0"
 }
 
 function print_hints_banner() {
@@ -42,9 +47,8 @@ function contains_element () {
 }
 
 function validate_wize_flow {
-    local -r wize_flow_dir="$(git rev-parse --show-toplevel)"/.git/wize-flow
-    if [[ ! -d "$wize_flow_dir" ]]; then
-        echo "ERROR: Git repository must be initialized with wize-flow first" 1>&2
+    if [ "$(git config --get wizeflow.enabled)" != "yes" ]; then
+        echo "wize-flow has not been initialized on this repository. Run 'git wize-flow init' first." >&2
         exit 1
     fi
 }
@@ -57,7 +61,30 @@ function validate_inputs() {
     __git_override="false"
     __wize_flow_hints="false"
 
+    if [[ "${__all_args[0]}" == "version" ]]; then
+        version
+        exit 0
+    fi
+
+    if [[ "${__all_args[0]}" == *"help"* || "${__all_args[0]}" == "-h" ]]; then
+        usage
+        exit 0
+    fi
+
+    if [[ "${__all_args[0]}" == "init" ]]; then
+        [[ "$#" != "3" ]] && usage && exit 1
+        # TODO: This path should not be hardcoded ANYHWERE
+        /usr/local/opt/wize-flow/wize-flow-setup.sh init "${__all_args[1]}" "${__all_args[2]}"
+        exit $?
+    fi
+   
     validate_wize_flow
+
+    if [[ "${__all_args[0]}" == "remove" ]]; then
+        [[ "$#" != "2" ]] && usage && exit 1
+        /usr/local/opt/wize-flow/wize-flow-setup.sh remove "${__all_args[1]}"
+        exit $?
+    fi
 
     __wize_flow_hints="true"
 
@@ -173,15 +200,15 @@ function run_wize_flow() {
         if [[ "$__git_override" == "true" ]]; then
             # Hacky way to avoid an unbound error for an empty array.
             # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-            "$(git rev-parse --show-toplevel)"/.git/wize-flow/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
+            /usr/local/opt/wize-flow/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
             __wize_flow_status=$?
         fi
         
         print_hints_banner
     fi
        
-}
-    
+} 
+
 main() {
     ####### GIT FUNCTION START #######
 
@@ -197,6 +224,11 @@ main() {
     validate_inputs "$@"
     run_git_flow
     run_wize_flow
+    if [[ "${__git_status-undefined}" != "undefined" ]]; then
+        exit "$__git_status"
+    else 
+        exit "$__wize_flow_status"
+    fi
 
     ####### GIT FUNCTION END #######
 }

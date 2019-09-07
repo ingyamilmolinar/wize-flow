@@ -80,6 +80,7 @@ init_config_params() {
     fi
 
     # Set target branch
+    # TODO: Make release target develop and test. Don't forget to change the git flow config
     __target_branch="undefined"
     if [[ "$__git_flow_type" == "hotfix" || "$__git_flow_type" == "release" ]]; then
         __target_branch=master
@@ -140,6 +141,7 @@ sync_base_branch() {
 exec_git_flow_finish() {
     # Hacky way to avoid an unbound error for an empty array.
     # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
+    # TODO: Handle conflicts on automated merge
     FORCE_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
 
 }
