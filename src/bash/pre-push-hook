@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [ "$(git config --get wizeflow.enabled)" != "yes" ]; then
+    echo "Wize-flow was not initialized correctly. Run 'git wize-flow init <repository-path> <git-hub-repository-url>'"
+    exit 1
+fi
+/usr/local/opt/wize-flow/pre-push-script || exit $?
