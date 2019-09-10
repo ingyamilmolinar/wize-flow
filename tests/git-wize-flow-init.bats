@@ -70,7 +70,7 @@ teardown() {
     [[ "$(git config --get wizeflow.enabled | grep yes)" ]]
 
     # Verify pre-push hook
-    run grep 'wizeflow' "$BATS_TMPDIR"/"$BATS_TEST_NAME"/.git/hooks/pre-push
+    run grep 'wize-flow' "$BATS_TMPDIR"/"$BATS_TEST_NAME"/.git/hooks/pre-push
     [ "$status" == "0" ]
 
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# This script will prevent direct pushes to develop and master branches if FORCE_PUSH is different than true
+
 protected_main_branch='master'
 protected_dev_branch='develop'
 push_command=$(ps -ocommand= -p $PPID)

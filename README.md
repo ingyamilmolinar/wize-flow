@@ -33,6 +33,7 @@ For an opinionated guide on how to achieve the different types of workflows usin
 ## Development
 ### Testing
 - Install [bats](https://github.com/bats-core/bats-core/): `brew install bats` 
+- Install [hub](https://github.com/github/hub): `brew install hub`
 - For unit tests run `./run-test.sh <bash|joker>` (Only bash support unit tests for now)
 - For integration tests run `INTEGRATION_TESTS=true ./run-test.sh <bash|joker>` (Internet connection needed)
 - To run an individual test from ./tests/ directory run `./run-test.sh <bash|joker> <test-filename>`

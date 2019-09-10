@@ -11,9 +11,14 @@ function git() {
     return "$?"
 }
 
+# Mock all hub commands
+function hub() {
+    return 0
+}
+
 # Mock all brew commands
 function brew() {
     return 0
 }
 
-export -f git brew
+export -f git hub brew

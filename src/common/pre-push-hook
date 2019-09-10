@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+#### Added by wize-flow 
+#TODO: It's bad to make users re-init each repository when pre-push-script changes
+"$(dirname "$0")"/pre-push-script || exit $?
+#### Added by wize-flow
