@@ -36,11 +36,13 @@ esac
 echo "Installing wize-flow..."
 readonly init_script_relative_path="$(dirname $0)"/src/"$1"
 
-# This will extend git with 'git wize-flow'. See: https://stackoverflow.com/questions/10978257/extending-git-functionality
-cp -f "$init_script_relative_path"/git-wize-flow /usr/local/bin
-
 mkdir -p /usr/local/opt/wize-flow
-cp -f "$init_script_relative_path"/* /usr/local/opt/wize-flow/. && chmod +x /usr/local/opt/wize-flow/*
+# Order matters in the next two commands. We override git-wize-flow on purpose
+cp -f "$init_script_relative_path"/../common/* /usr/local/opt/wize-flow
+cp -f "$init_script_relative_path"/* /usr/local/opt/wize-flow
+
+# This will extend git with 'git wize-flow'. See: https://stackoverflow.com/questions/10978257/extending-git-functionality
+cp -f "$init_script_relative_path"/../common/git-wize-flow /usr/local/bin
 
 echo "Wize-flow was installed successfully on /usr/local/opt/wize-flow"
 

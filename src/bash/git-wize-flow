@@ -71,9 +71,9 @@ function validate_inputs() {
         exit 0
     fi
 
+    #TODO: Support omitting directory argument
     if [[ "${__all_args[0]}" == "init" ]]; then
         [[ "$#" != "3" ]] && usage && exit 1
-        # TODO: This path should not be hardcoded ANYHWERE
         "$(dirname "$0")"/wize-flow-setup.sh init "${__all_args[1]}" "${__all_args[2]}"
         exit $?
     fi
