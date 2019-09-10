@@ -90,20 +90,22 @@ init_config_params() {
         __target_branch=develop
     fi
 
-    readonly __head_branch=$(git branch | grep '\*' | sed 's/\* //g')
-
-    # Gets latest merged PR num for current branch
-    local -r merged_pr_num=$(hub pr list -s merged -h "$__head_branch" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
+    # Gets latest merged PR num for branch to merge
+    local -r merged_pr_num=$(hub pr list -s merged -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
 
     # Gets Github username from .git/config
     local -r github_username=$(grep -A 1 'remote \"origin\"' .git/config | grep -o ':.*/' | sed 's/://g' | sed 's:/::g')
 
     # Gets Github repository from .git/config
     local -r github_repository=$(grep -A 1 'remote \"origin\"' .git/config | grep -o '/.*\.' | sed 's:/::g' | sed 's:\.::g')
+    
+    
+    local -r current_branch_last_commit_hash=$(git log "$__branch_to_merge" | head -n 1 | awk '{print $2}')
+    [[ ! -z "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[0]["sha"];')
 
-    if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null; then
+    if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null || [[ "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
         # Gets latest non-merged PR num for current branch
-        local -r non_merged_pr_num=$(hub pr list -h "$__head_branch" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
+        local -r non_merged_pr_num=$(hub pr list -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
         if [[ -z "${non_merged_pr_num}" ]]; then
             echo "No PR has been created from $__branch_to_merge to $__target_branch on repository $github_repository" 1>&2
         else
@@ -134,7 +136,7 @@ sync_base_branch() {
         git checkout develop
         git pull origin develop
     fi
-    git checkout "$__head_branch"
+    git checkout "$__branch_to_merge"
     
 }
 

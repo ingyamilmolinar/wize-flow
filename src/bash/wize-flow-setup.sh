@@ -76,10 +76,11 @@ function init() {
     echo "Initializing wize-flow..."
 
     # Install pre-push script
-    # TODO: Preserve what's already in the pre-push
-    cp -f /usr/local/opt/wize-flow/pre-push-hook .git/hooks/pre-push
+    # TODO: Preserve what's already in the pre-push (if anything)
+    cp -f "$(dirname "$0")"/../common/pre-push-hook .git/hooks/pre-push
+    cp -f "$(dirname "$0")"/../common/pre-push-script .git/hooks
     # Set git defaults
-    /usr/local/opt/wize-flow/git-flow-defaults.sh
+    "$(dirname "$0")"/../common/git-flow-defaults.sh
     # Flag this repo as wize-flow enabled
     git config wizeflow.enabled 'yes' --local
     
@@ -100,8 +101,9 @@ function remove() {
     fi
 
     echo "Removing wize-flow..."
-    #TODO: Remove the specific changes introduced. Not everything
+    # TODO: Remove the specific changes introduced. Not everything
     rm -f "${__repository_directory}"/.git/hooks/pre-push
+    rm -f "${__repository_directory}"/.git/hooks/pre-push-script
     git config --unset wizeflow.enabled
 
     echo
