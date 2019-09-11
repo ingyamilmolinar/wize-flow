@@ -71,24 +71,27 @@ validate_hub() {
 
 init_config_params() {
 
-    # Get current branch base branch
-    local base_branch="undefined"
-    if [[ "$__git_flow_type" == "hotfix" ]]; then
-        base_branch=develop
-    else
-        base_branch=$(git show-branch | grep '\*' | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')
-    fi
+    # Get base branch
+    #TODO: Make this flexible. Bugfix can branch out from release or from feature!
+    case "$__git_flow_type" in
+        feature|bugfix|release)
+                local -r base_branch=develop
+                ;;
+        hotfix)
+                local -r base_branch=master
+                ;;
+    esac
 
-    # Set target branch
-    # TODO: Make release target develop and test. Don't forget to change the git flow config
-    __target_branch="undefined"
-    if [[ "$__git_flow_type" == "hotfix" || "$__git_flow_type" == "release" ]]; then
-        __target_branch=master
-    elif [[ $__git_flow_type == "bugfix" ]]; then
-        __target_branch="$base_branch"
-    else
-        __target_branch=develop
-    fi
+    # Set target branch for PR
+    #TODO: Make this flexible. Bugfix can branch to release or to feature!
+    case "$__git_flow_type" in
+        feature|bugfix|release)
+                __target_branch=develop
+                ;;
+        hotfix)
+                __target_branch=master
+                ;;
+    esac
 
     # Gets latest merged PR num for branch to merge
     local -r merged_pr_num=$(hub pr list -s merged -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')

@@ -2,6 +2,7 @@
 
 function usage() {
     #TODO: More git-like usage
+    #TODO: Support --force for publish
     echo "usage: git wize-flow <version|init|remove|feature|release|bugfix|hotfix> <start|publish|finish> <branch-name> [tag-version]"
 }
 
