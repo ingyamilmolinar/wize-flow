@@ -83,7 +83,7 @@ init_config_params() {
     esac
 
     # Set target branch for PR
-    #TODO: Make this flexible. Bugfix can branch to release or to feature!
+    #TODO: Make this flexible. Bugfix can merge back to release or feature!
     case "$__git_flow_type" in
         feature|bugfix|release)
                 __target_branch=develop
@@ -104,7 +104,7 @@ init_config_params() {
     
     
     local -r current_branch_last_commit_hash=$(git log "$__branch_to_merge" | head -n 1 | awk '{print $2}')
-    [[ ! -z "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[0]["sha"];')
+    [[ ! -z "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[-1]["sha"];')
 
     if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null || [[ "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
         # Gets latest non-merged PR num for current branch
