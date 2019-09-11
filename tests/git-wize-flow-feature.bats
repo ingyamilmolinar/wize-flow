@@ -3,6 +3,7 @@
 setup() {
     # Unit testing support for feature functionality is missing
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip
+    [[ "$BATS_TEST_NUMBER" != "1" ]] && skip
     load common/setup
     git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
 }
@@ -13,8 +14,15 @@ teardown() {
 }
 
 @test "Running 'git wize-flow feature start my-feature' should create a branch called feature/my-feature based on top of develop" {
-    #TODO: How to test gitflow.feature.start.fetch?
+    # Commit a couple of times to develop to simulate other developments
+    git checkout develop
+    git touch simulate-other-devs
+    git add simulate-other-devs
+    git commit -m "Simulating other devs"    
+    git push origin develop
+
     run git wize-flow feature start my-feature
+    echo "# $output" >&3
     [ "$status" == "0" ]
     [[ "$output" == *"Switched to a new branch 'feature/my-feature'"* ]]
     [[ "$output" == *"Next step: Implement, add and commit"* ]]
