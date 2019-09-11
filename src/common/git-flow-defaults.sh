@@ -8,8 +8,10 @@ git config gitflow.feature.finish.no-ff yes --local
 git config gitflow.release.start.fetch yes --local
 git config gitflow.release.finish.fetch yes --local
 git config gitflow.release.finish.push yes --local
-# TOFIX: This one does not work
-git config gitflow.release.finish.ff-master no --local
+# Because this will be managed through PR
+git config gitflow.release.finish.nodevelopmerge yes --local
+git config gitflow.release.finish.pushdevelop no --local
+git config gitflow.release.finish.nobackmerge yes --local
 
 git config gitflow.bugfix.start.fetch yes --local
 git config gitflow.bugfix.finish.fetch yes --local
