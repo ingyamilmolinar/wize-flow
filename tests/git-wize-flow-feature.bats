@@ -2,22 +2,22 @@
 
 setup() {
     # Unit testing support for feature functionality is missing
-    [[ "$INTEGRATION_TESTS" != "true" ]] && skip
-    [[ "$BATS_TEST_NUMBER" != "6" ]] && skip
+    [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for feature workflow"
     load common/setup
     git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
 }
 
 teardown() {
+    [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for feature workflow"
+
     # TODO: Think about concurrency safety (If someone merges to develop before I reset, the final state is undefined)
-    if [[ "$INTEGRATION_TESTS" == "true" ]]; then 
-        git checkout develop && 
-        git checkout "$(git log --oneline | tail -n1 | awk '{print $1}')" &&
-        git reset --hard &&
-        git branch -D develop &&
-        git checkout -b develop &&
-        FORCE_PUSH=true git push --force origin develop
-    fi
+    git checkout develop && 
+    git checkout "$(git log --oneline | tail -n1 | awk '{print $1}')" &&
+    git reset --hard &&
+    git branch -D develop &&
+    git checkout -b develop &&
+    FORCE_PUSH=true git push --force origin develop
+
     git wize-flow remove "$(pwd)"
     load common/teardown 
 }
@@ -82,15 +82,24 @@ teardown() {
     touch "$user_and_hostname"
     git add "$user_and_hostname"
     git commit -m "touching $user_and_hostname"
-    git wize-flow publish
-
+    
+    # Calling finish without publishing should fail 
     run git wize-flow feature finish "$branch_name"
     [ "$status" != "0" ]
-    [[ "$output" == "No PR has been created from feature/$branch_name to develop on repository wize-flow-test" ]]
+    [[ "$output" == *"No PR has been created from feature/$branch_name to develop on repository wize-flow-test"* ]]
 
+    git wize-flow publish
+
+    # Calling finish with published branch but no PR should fail
+    run git wize-flow feature finish "$branch_name"
+    [ "$status" != "0" ]
+    [[ "$output" == *"No PR has been created from feature/$branch_name to develop on repository wize-flow-test"* ]]
+    
+    # Create PR on github from feature/$branch_name to develop
     local -r pr_link=$(hub pull-request -m "Test PR created by $user_and_hostname" -b develop -h "feature/$branch_name")
     local -r pr_num=$(echo "$pr_link" | grep -Eo '[0-9]+$')
 
+    # Calling finish with open unmerged PR should fail
     run git wize-flow feature finish "$branch_name"
     [ "$status" != "0" ]
     [[ "$output" == *"The PR $pr_num on repository wize-flow-test has not been merged"* ]]
@@ -99,6 +108,7 @@ teardown() {
     git checkout develop && git merge "feature/$branch_name"
     FORCE_PUSH=true git push origin develop
 
+    # Calling finish with merged PR should succeed
     run git wize-flow feature finish "$branch_name"
     [ "$status" == "0" ]
     [[ "$output" == *"branch 'feature/$branch_name' was merged into 'develop'"* ]]
@@ -106,16 +116,16 @@ teardown() {
     [[ "$output" == *"has been remotely deleted from 'origin'"* ]]
     [[ "$output" == *"Congratulations!"* ]]
 
-    # Running git wize-flow feature finish with the same branch name should not work
+    # Running git wize-flow feature finish with the same branch name should fail
     git wize-flow feature start "$branch_name"
     touch "$user_and_hostname-2"
     git add "$user_and_hostname-2"
     git commit -m "touching $user_and_hostname-2"
     git wize-flow publish
 
-    echo "# $(git wize-flow feature finish "$branch_name")" >&3
-    
+    run git wize-flow feature finish "$branch_name"
     [ "$status" != "0" ]
-    [[ "$output" == "No PR has been created from feature/$branch_name to develop on repository wize-flow-test" ]]
+    [[ "$output" == *"No PR has been created from feature/$branch_name to develop on repository wize-flow-test"* ]]
+    git push --delete origin "feature/$branch_name"
     
 }

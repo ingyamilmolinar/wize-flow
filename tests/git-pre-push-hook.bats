@@ -8,6 +8,7 @@ setup() {
 }
 
 teardown() {
+    [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for pre-push hook"
     git wize-flow remove "$(pwd)"
     load common/teardown
 }
@@ -28,6 +29,12 @@ teardown() {
     git checkout -b feature/test develop
     run git push origin feature/test
     [ "$status" == "0" ]
+    git push --delete origin feature/test
 }
 
-#TODO: @test "Running 'git push origin --delete feature/test' should pass"
+@test "Running 'git push origin --delete feature/test' should pass" {
+    git checkout -b feature/test develop
+    run git push origin feature/test
+    run git push --delete origin feature/test
+    [ "$status" == "0" ]
+}

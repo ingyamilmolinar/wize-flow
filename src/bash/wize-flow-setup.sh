@@ -26,7 +26,6 @@ function init() {
     if [[ ! $(git remote | grep 'origin') ]]; then
         echo "Adding remote..."
         git remote add origin "$__remote"
-        git fetch
     fi
 
     # Get current branch before changing
@@ -148,7 +147,7 @@ function main {
                     ;;
             esac
             if [[ "$__setup_command" == "init" || "$__setup_command" == "reinit" ]]; then
-                if ! git ls-remote "${3-undefined}" 2>/dev/null; then
+                if ! git ls-remote "${3-undefined}" &>/dev/null; then
                     echo "Error: '$3' remote does not exist"
                     usage
                 fi 
