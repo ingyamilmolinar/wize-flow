@@ -31,16 +31,17 @@ function init() {
 
     # Get current branch before changing
     local -r current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    git fetch --prune
     if [[ $(git branch -a | grep 'remotes/origin/develop') ]]; then
         echo "Pulling remote develop branch..."
-        if [[ ! $(git checkout develop) || ! $(git pull origin develop) ]]; then
+        if [[ ! $(git checkout develop && git pull origin develop) ]]; then
             echo "There was an issue pulling develop branch. Please verify and try again" 1>&2
             exit 1
         fi
     fi
     if [[ $(git branch -a | grep 'remotes/origin/master') ]]; then
         echo "Pulling remote master branch..."
-        if [[ ! $(git checkout master) || ! $(git pull origin master) ]]; then
+        if [[ ! $(git checkout master && git pull origin master) ]]; then
             echo "There was an issue pulling master branch. Please verify and try again" 1>&2
             exit 1
         fi
