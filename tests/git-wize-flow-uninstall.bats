@@ -4,11 +4,9 @@ setup() {
     skip
     [[ "$INTEGRATION_TESTS" != "true" ]] && load common/mocks
     load common/setup
-    wize-flow-install.sh "${WIZE_FLOW_IMPLEMENTATION-bash}" || true
 }
 
 teardown() {
-    wize-flow-install.sh "${WIZE_FLOW_IMPLEMENTATION-bash}" || true
     load common/teardown
 }
 

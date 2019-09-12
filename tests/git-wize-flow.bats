@@ -5,12 +5,12 @@ setup() {
     load common/setup
     #TOFIX: We shouldn't need to have an initialized repository just to validate inputs
     #Added this line so last tests don't break
-    git wize-flow init "$BATS_TMPDIR"/"$BATS_TEST_NAME" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
 }
 
 teardown() {
     #TOFIX: Don't forget to update this line as well
-    git wize-flow remove "$BATS_TMPDIR"/"$BATS_TEST_NAME"
+    git wize-flow remove "$(pwd)"
     load common/teardown
 }
 
