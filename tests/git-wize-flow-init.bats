@@ -29,6 +29,8 @@ teardown() {
 
 @test "Running 'git wize-flow init' with an invalid github repository should throw error" {
     
+    # This function only work with the bash implementation
+    # Does not cause an issue on integration tests since git@github.com:fakeorg/fakerepo.git is very likely an unexistant repository
     function git() {
         if [[ "$1" == "ls-remote" && "$2" == "git@github.com:fakeorg/fakerepo.git" ]]; then
             return 1
@@ -38,7 +40,7 @@ teardown() {
     }
     export -f git
 
-    run git wize-flow init "$BATS_TMPDIR"/"$BATS_TEST_NAME" git@github.com:fakeorg/fakerepo.git 
+    run git wize-flow init "$(pwd)" git@github.com:fakeorg/fakerepo.git 
 
     [ "$status" != "0" ]
     [[ "$output" == *"remote does not exist"* ]]
@@ -46,7 +48,7 @@ teardown() {
 
 @test "Running 'git wize-flow init' on a new directory with a valid path and repository url should execute succesfully" {
     
-    run git wize-flow init "$BATS_TMPDIR"/"$BATS_TEST_NAME" git@github.com:wizeline/wize-flow-test.git 
+    run git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git 
     
     [ "$status" == "0" ]
     [[ "$output" == *"Successfully initialized wize-flow"* ]]
@@ -60,7 +62,7 @@ teardown() {
     # Verify gitflow config and wize-flow enabled
     git config -l | grep gitflow > gitflow-config.actual
     cp "$BATS_TEST_DIRNAME"/expected_files/gitflow-config.expected gitflow-config.expected
-    sed -i.bak "s:REPLACE_WITH_REPOSITORY_DIRECTORY:$BATS_TMPDIR/$BATS_TEST_NAME/.git/hooks:g" gitflow-config.expected
+    sed -i.bak "s:REPLACE_WITH_REPOSITORY_DIRECTORY:$(pwd)/.git/hooks:g" gitflow-config.expected
     
     cat gitflow-config.expected | tr '=' ' ' | awk '{print $1}' | xargs -L 1 -J % git config --get % > tmp.actual
     cat gitflow-config.expected | tr '=' ' ' | awk '{print $2}' > tmp.expected 
@@ -70,7 +72,7 @@ teardown() {
     [[ "$(git config --get wizeflow.enabled | grep yes)" ]]
 
     # Verify pre-push hook
-    run grep 'wize-flow' "$BATS_TMPDIR"/"$BATS_TEST_NAME"/.git/hooks/pre-push
+    run grep 'wize-flow' "$(pwd)"/.git/hooks/pre-push
     [ "$status" == "0" ]
 
 }

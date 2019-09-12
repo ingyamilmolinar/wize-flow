@@ -3,13 +3,12 @@
 setup() {
     # Unit testing support for feature functionality is missing
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip
-    #[[ "$BATS_TEST_NUMBER" != "6" ]] && skip
     load common/setup
-    git wize-flow init "$BATS_TMPDIR"/"$BATS_TEST_NAME" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
 }
 
 teardown() {
-    git wize-flow remove "$BATS_TMPDIR"/"$BATS_TEST_NAME"
+    git wize-flow remove "$(pwd)"
     load common/teardown 
 }
 
@@ -94,7 +93,7 @@ teardown() {
     [[ "$output" == *"branch 'feature/my-feature-$user_and_hostname' has been locally deleted"* ]]
     [[ "$output" == *"has been remotely deleted from 'origin'"* ]]
     [[ "$output" == *"Congratulations!"* ]]
-    # TODO: GitHub repository cleanup if test fails or gets interupted
+    # TODO: GitHub repository cleanup if test fails or gets interupted by using a bash trap
     # TODO: Think about concurrency safety (If someone merges to develop before I reset, the final state is undefined)
     git checkout develop && git checkout "HEAD~1" && git reset --hard && git branch -D develop && git checkout -b develop && FORCE_PUSH=true git push --force origin develop
 }

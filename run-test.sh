@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 
-readonly absolute_execution_directory="$(cd "$(dirname $0)" && pwd)"
-PATH="$absolute_execution_directory":"$PATH"
 case "$1" in
     bash)
-            PATH="$absolute_execution_directory"/src/bash:"$PATH"
+            # Default for bash is unit tests
+            INTEGRATION_TESTS="${INTEGRATION_TESTS-false}"
             ;;
     joker)
             # We only support unit tests on BASH
             INTEGRATION_TESTS="true"
-            PATH="$absolute_execution_directory"/src/joker:"$PATH"
             ;;
     *)
             echo "Implementation required. Run with options <bash|joker>"
@@ -26,4 +24,4 @@ case "${2-undefined}" in
         ;;
 esac
 
-PATH="$PATH" INTEGRATION_TESTS="${INTEGRATION_TESTS-false}" WIZE_FLOW_IMPLEMENTATION="$1" bats tests/$test_name
+INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats tests/$test_name
