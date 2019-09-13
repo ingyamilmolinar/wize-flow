@@ -75,10 +75,10 @@ init_config_params() {
     #TODO: Make this flexible. Bugfix can branch out from release or from feature!
     case "$__git_flow_type" in
         feature|bugfix|release)
-                local -r base_branch=develop
+                __base_branch=develop
                 ;;
         hotfix)
-                local -r base_branch=master
+                __base_branch=master
                 ;;
     esac
 
@@ -104,7 +104,7 @@ init_config_params() {
     
     
     local -r current_branch_last_commit_hash=$(git log "$__branch_to_merge" | head -n 1 | awk '{print $2}')
-    [[ ! -z "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[-1]["sha"];')
+    [[ -n "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[-1]["sha"];')
 
     if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null || [[ "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
         # Gets latest non-merged PR num for current branch
@@ -133,12 +133,10 @@ set_git_flow_opts() {
 
 sync_base_branch() {
 
+    git checkout "$__base_branch"
+    git pull origin "$__base_branch"
     git checkout "$__target_branch"
     git pull origin "$__target_branch"
-    if [[ "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ]]; then
-        git checkout develop
-        git pull origin develop
-    fi
     git checkout "$__branch_to_merge"
     
 }

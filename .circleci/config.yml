@@ -1,16 +1,46 @@
 on: 2
 jobs:
-  build:
-    docker:
-      - image: debian:stretch
-
-    steps:
-      - checkout
-
-      - run:
-          name: Greeting
-          command: echo Hello, world.
-
-      - run:
-          name: Print the Current Time
-          command: date
+    build:
+        docker:
+            - image: ubuntu:latest
+        steps:
+            - add_ssh_keys:
+                fingerprints:
+                - "d0:22:69:5c:ea:9d:7c:37:80:e5:d4:a5:e4:d9:7f:33"            
+            - checkout
+            - run:
+                name: Install sudo
+                command: apt-get update && apt-get -y install sudo
+            - run:
+                name: Create circleci user to avoid Dont run this as root! problem
+                command: "adduser --disabled-password --ingroup sudo --gecos \"\" circleci && echo \"circleci ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers"
+            - run:
+                name: Change project location to /home/circleci/project
+                command: mv /root/project /home/circleci && mv /root/.ssh /home/circleci
+            - run:
+                name: Rename id_rsa github deploy key
+                command: mv /home/circleci/.ssh/id_rsa_* /home/circleci/.ssh/id_rsa
+            - run:
+                name: Avoid hosts unknown for github
+                command: echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > /home/circleci/.ssh/config
+            - run:
+                name: Recursively own /home/circleci folder 
+                command: chown -R circleci /home/circleci && chgrp -R sudo /home/circleci
+            - run:
+                name: Install shellcheck
+                command: apt-get -y install shellcheck
+            - run:
+                name: Check bash scripts
+                command: su - circleci -c "find project/src/bash -type f | xargs shellcheck --external-sources --shell=bash --exclude=SC2143,SC2004,SC2236"
+            - run:
+                name: Install wize-flow and verify
+                command: su - circleci -c "./project/wize-flow-install.sh bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"
+            - run:
+                name: Install test dependencies
+                command: su - circleci -c "brew install gcc && brew install bats"
+            - run:
+                name: Set up git username and email
+                command: su - circleci -c "git config --add --global user.name wize-flow-test-bot && git config --add --global user.email wize.flow.test.bot@gmail.com"
+            - run:
+                name: Run integration tests
+                command: su - circleci -c "GITHUB_TOKEN=01c45c695426fadcbdff0e9057454a6ac8f0bb76 TERM=dumb INTEGRATION_TESTS=true ./project/run-test.sh bash"
