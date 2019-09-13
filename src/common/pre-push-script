@@ -2,15 +2,22 @@
 
 # This script will prevent direct pushes to develop and master branches if FORCE_PUSH is different than true
 
+branches_to_push=""
+while read localname localhash remotename remotehash; do
+    branches_to_push="$branches_to_push $(echo $remotename | sed s:refs/heads/::)"
+done
+
 protected_main_branch='master'
 protected_dev_branch='develop'
 push_command=$(ps -ocommand= -p $PPID)
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-if [[ ( "$push_command" == *" $protected_main_branch"* || "$push_command" == *" $protected_dev_branch"* || "$push_command" == *"origin $(git remote get-url origin)"* && ( "$current_branch" == "$protected_main_branch" ||  "$current_branch" == "$protected_dev_branch" ) ) && $FORCE_PUSH != "true" ]]
-then
-  echo 'You cannot push directly to develop or master'
-  exit 1
+current_upstream_branch=$(git branch -vv | grep \* | grep "origin/$current_branch")
+[[ ! -z "$current_upstream_branch" ]] && current_branch_upstreamed="true"
+
+if [[ "$@" == *"origin"* && ( "$branches_to_push" == *" $protected_main_branch"* || "$branches_to_push" == *" $protected_dev_branch"* || ( ( "$current_branch" == "$protected_main_branch" || "$current_branch" == "$protected_dev_branch" ) && "$current_branch_upstreamed" == "true" && -z $branches_to_push ) ) && $FORCE_PUSH != "true" ]]; then
+    echo 'You cannot push directly to develop or master on origin'
+    exit 1
 else
-  exit 0
+    exit 0
 fi
