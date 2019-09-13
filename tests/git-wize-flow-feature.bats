@@ -5,19 +5,12 @@ setup() {
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for feature workflow"
     load common/setup
     git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    load common/remote_cleanup
 }
 
 teardown() {
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for feature workflow"
-
-    # TODO: Think about concurrency safety (If someone merges to develop before I reset, the final state is undefined)
-    git checkout develop && 
-    git checkout "$(git log --oneline | tail -n1 | awk '{print $1}')" &&
-    git reset --hard &&
-    git branch -D develop &&
-    git checkout -b develop &&
-    FORCE_PUSH=true git push --force origin develop
-
+    load common/remote_cleanup
     git wize-flow remove "$(pwd)"
     load common/teardown 
 }
@@ -69,15 +62,12 @@ teardown() {
     [[ "$output" == *"To github.com:wizeline/wize-flow-test.git"* ]]
     [[ "$output" == *"feature/$branch_name -> feature/$branch_name"* ]]
     [[ "$output" == *"Next step: Open PR"* ]]
-    git push --delete origin "feature/$branch_name"
 }
 
 @test "Running 'git wize-flow finish' after 'git wize-flow feature publish' executed successfully should validate PR" {
     
     local -r user_and_hostname="$(whoami)-$(hostname)"
     local -r branch_name="my-feature-$user_and_hostname"
-    git branch -D "feature/$branch_name" || true
-    git push --delete origin "feature/$branch_name" || true
     git wize-flow feature start "$branch_name"
     touch "$user_and_hostname"
     git add "$user_and_hostname"
@@ -116,6 +106,10 @@ teardown() {
     [[ "$output" == *"has been remotely deleted from 'origin'"* ]]
     [[ "$output" == *"Congratulations!"* ]]
 
+    # Verifying that the branch was both locally and remotely deleted
+    git fetch --prune
+    [[ -z "$(git branch -a | grep "feature/$branch_name")" ]]
+
     # Running git wize-flow feature finish with the same branch name should fail
     git wize-flow feature start "$branch_name"
     touch "$user_and_hostname-2"
@@ -126,6 +120,5 @@ teardown() {
     run git wize-flow feature finish "$branch_name"
     [ "$status" != "0" ]
     [[ "$output" == *"No PR has been created from feature/$branch_name to develop on repository wize-flow-test"* ]]
-    git push --delete origin "feature/$branch_name"
     
 }
