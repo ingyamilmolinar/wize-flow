@@ -15,13 +15,13 @@ case "$1" in
             ;;
 esac
 
-case "${2-undefined}" in
-    undefined)
-        test_name="*.bats"
-        ;;
-    *)
-        test_name="$(echo "$2" | sed 's/.bats$//').bats"
-        ;;
-esac
+i=0
+test_names=()
+for arg in "$@"; do
+    [[ "$i" -gt 0 ]] && test_names=("${test_names[@]}" "$(dirname $0)/tests/$(echo "$arg" | sed 's:tests::' | sed 's:/::g' | sed 's/.bats$//').bats")
+    ((i++))
+done 
 
-INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats "$(dirname $0)"/tests/$test_name
+[[ "${2-undefined}" == "undefined" ]] && test_names=("$(dirname $0)/tests/*.bats")
+
+INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats ${test_names[@]}
