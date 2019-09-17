@@ -31,9 +31,14 @@ For `git-flow-avh` usage refer to the [cheatsheet](https://danielkummer.github.i
 For an opinionated guide on how to achieve the different types of workflows using `wize-flow`, check [this](https://docs.google.com/document/d/1gsLuBmR-eGTYKfYwJ5ZxJLVWlO6cA7Jdr5REDV2Y_ZQ/edit?usp=sharing) out!
 
 ## Development
+### Static analysis
+- Install [shellcheck](https://github.com/koalaman/shellcheck): `brew install shellcheck`
+- Run shellcheck on bash sources: `find src/bash -type f | xargs shellcheck --external-sources --shell=bash`
+
 ### Testing
 - Install [bats](https://github.com/bats-core/bats-core/): `brew install bats` 
 - Install [hub](https://github.com/github/hub): `brew install hub`
+- Configure hub by either setting user/password: `export GITHUB_USER=<your-github-username> && export GITHUB_PASSWORD=<your-github-password>` or by setting an access token: `export GITHUB_TOKEN=<your-github-access-token>`
 - For unit tests run `./run-test.sh <bash|joker>` (Only bash support unit tests for now)
 - For integration tests run `INTEGRATION_TESTS=true ./run-test.sh <bash|joker>` (Internet connection needed)
 - To run an individual test from ./tests/ directory run `./run-test.sh <bash|joker> <test-filename>`

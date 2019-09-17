@@ -18,3 +18,6 @@ PATH="$BATS_TMPDIR"/"$BATS_TEST_NAME"/wize-flow-install:"$PATH"
 
 # Change directory to where the tests are going to run
 cd "$BATS_TMPDIR"/"$BATS_TEST_NAME"/git-repository
+
+echo "# Running tests on directory: $BATS_TMPDIR/$BATS_TEST_NAME/git-repository" >&3
+echo "# Running wize-flow from installation directory: $BATS_TMPDIR/$BATS_TEST_NAME/wize-flow-install" >&3

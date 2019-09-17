@@ -24,4 +24,4 @@ case "${2-undefined}" in
         ;;
 esac
 
-INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats tests/$test_name
+INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats "$(dirname $0)"/tests/$test_name

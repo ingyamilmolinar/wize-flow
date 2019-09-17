@@ -38,3 +38,5 @@ teardown() {
     run git push --delete origin feature/test
     [ "$status" == "0" ]
 }
+
+#TODO: Test when locally tracking long-lived upstream branch and pushing without arguments

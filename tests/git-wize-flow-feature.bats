@@ -33,7 +33,7 @@ teardown() {
 @test "Running 'git wize-flow bugfix|release|hotfix publish' after 'git wize-flow feature start my-feature' should throw an error" {
     git wize-flow feature start my-feature
     for workflow in "bugfix" "release" "hotfix"; do
-        run git wize-flow $workflow publish
+        run git wize-flow "$workflow" publish
         [ "$status" != "0" ]
         [[ "$output" == *"HEAD is no $workflow branch"* ]]
     done
@@ -56,7 +56,7 @@ teardown() {
 @test "Running 'git wize-flow publish' after 'git wize-flow feature start my-feature' should execute successfully" {
     local -r user_and_hostname="$(whoami)-$(hostname)"
     local -r branch_name="my-feature-$user_and_hostname"
-    git wize-flow feature start $branch_name
+    git wize-flow feature start "$branch_name"
     run git wize-flow publish
     [ "$status" == "0" ]
     [[ "$output" == *"To github.com:wizeline/wize-flow-test.git"* ]]
@@ -97,6 +97,9 @@ teardown() {
     # This will merge the open PR
     git checkout develop && git merge "feature/$branch_name"
     FORCE_PUSH=true git push origin develop
+
+    # Sleep one second to wait for back-end API to sync
+    sleep 1
 
     # Calling finish with merged PR should succeed
     run git wize-flow feature finish "$branch_name"

@@ -64,7 +64,7 @@ teardown() {
     cp "$BATS_TEST_DIRNAME"/expected_files/gitflow-config.expected gitflow-config.expected
     sed -i.bak "s:REPLACE_WITH_REPOSITORY_DIRECTORY:$(pwd)/.git/hooks:g" gitflow-config.expected
     
-    cat gitflow-config.expected | tr '=' ' ' | awk '{print $1}' | xargs -L 1 -J % git config --get % > tmp.actual
+    cat gitflow-config.expected | tr '=' ' ' | awk '{print $1}' | xargs -L 1 git config --get > tmp.actual
     cat gitflow-config.expected | tr '=' ' ' | awk '{print $2}' > tmp.expected 
 
     run diff tmp.actual tmp.expected

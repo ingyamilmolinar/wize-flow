@@ -14,6 +14,12 @@ function init() {
     fi
 
     if [[ $(git branch 2>&1 | grep 'not a git repository') ]]; then
+        if [[ -z $(git config --global user.name) || -z $(git config --global user.email) ]]; then
+            echo "Please set up your global git user information first with: " 1>&2
+            echo "     git config --add --global user.name <username>" 1>&2
+            echo "     git config --add --global user.email <email>" 1>&2
+            exit 1
+        fi
         echo "Initializing git repo..."
         git init
     fi
@@ -129,7 +135,7 @@ function main {
     # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
     set -o pipefail
 
-    [[ "$#" < 1 || "$#" > 3 ]] && usage
+    [[ "$#" -lt 1 || "$#" -gt 3 ]] && usage
     
     case "${1-undefined}" in
         init|remove|reinit)

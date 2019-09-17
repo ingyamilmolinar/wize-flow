@@ -2,8 +2,9 @@
 
 # Remove all branches but develop and master both remotely and locally
 git fetch --prune
-git branch -a | grep -v -e develop -e master | grep -v origin/ | xargs git branch -D
-git branch -a | grep -v -e develop -e master | grep origin/ | sed 's:remotes/origin/::g'  | xargs git push --delete origin
+git checkout develop
+git branch -a | grep -v -e develop -e master | grep -v origin/ | sed 's:*::g' | xargs git branch -D || true
+git branch -a | grep -v -e develop -e master | grep origin/ | sed 's:*::g' | sed 's:remotes/origin/::g' | xargs git push --delete origin || true
 
 # TODO: Think about concurrency safety (If someone merges to develop before I reset, the final state is undefined)
 # Reset develop and master to the initial state

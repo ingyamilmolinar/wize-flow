@@ -115,7 +115,7 @@ function validate_inputs() {
                 __branch_name="$third_arg"
                 branch_provided=true
             else
-                __branch_name=$(git rev-parse --abbrev-ref head | sed "s:$__git_flow_type/::")
+                __branch_name=$(git rev-parse --abbrev-ref HEAD | sed "s:$__git_flow_type/::")
             fi
             if [[ "$will_override" == "true" && ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) ]]; then
                 if [[ "$branch_provided" != "true" && "${#__all_args[@]}" == 2 ]]; then 
@@ -139,7 +139,7 @@ function validate_inputs() {
                 __branch_name="$second_arg"
                 branch_provided=true
             else
-                __branch_name=$(git rev-parse --abbrev-ref head | sed "s:$__git_flow_type/::")
+                __branch_name=$(git rev-parse --abbrev-ref HEAD | sed "s:$__git_flow_type/::")
             fi
             if [[ "$will_override" == "true" && ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) ]]; then
                 if [[ "$branch_provided" != "true" && "${#__all_args[@]}" == 2 ]]; then                
@@ -188,7 +188,7 @@ function run_git_flow() {
     if [[ "$__git_override" == "false" ]]; then
         # Hacky way to avoid an unbound error for an empty array.
         # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-        git flow ${__all_args[@]+"${__all_args[@]}"}
+        git flow "${__all_args[@]+${__all_args[@]}}"
         __git_status=$?
     fi
    
@@ -201,7 +201,7 @@ function run_wize_flow() {
         if [[ "$__git_override" == "true" ]]; then
             # Hacky way to avoid an unbound error for an empty array.
             # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-            "$(dirname "$0")"/git-flow-finish.sh ${__all_args[@]+"${__all_args[@]}"}
+            "$(dirname "$0")"/git-flow-finish.sh "${__all_args[@]+${__all_args[@]}}"
             __wize_flow_status=$?
         fi
         
