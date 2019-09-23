@@ -31,7 +31,7 @@ For `git-flow-avh` usage refer to the [cheatsheet](https://danielkummer.github.i
 For an opinionated guide on how to achieve the different types of workflows using `wize-flow`, check [this](https://docs.google.com/document/d/1gsLuBmR-eGTYKfYwJ5ZxJLVWlO6cA7Jdr5REDV2Y_ZQ/edit?usp=sharing) out!
 
 ## Development
-### Static analysis
+### Static analysis (for BASH only)
 - Install [shellcheck](https://github.com/koalaman/shellcheck): `brew install shellcheck`
 - Run shellcheck on bash sources: `find src/bash -type f | xargs shellcheck --external-sources --shell=bash`
 
@@ -43,7 +43,7 @@ For an opinionated guide on how to achieve the different types of workflows usin
 - For integration tests run `INTEGRATION_TESTS=true ./run-test.sh <bash|joker>` (Internet connection needed)
 - To run an individual test from ./tests/ directory run `./run-test.sh <bash|joker> <test-filename>`
 
-### Code Coverage (for BASH only)
+### [WIP] Code Coverage (for BASH only)
 - Install ruby: `brew install ruby`
 - Install bashcov: `sudo gem install bashcov`
 - To get the test coverage for integration tests: `INTEGRATION_TESTS=true bashcov ./run-test.sh <bash|joker>`

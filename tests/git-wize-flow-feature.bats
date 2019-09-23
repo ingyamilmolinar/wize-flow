@@ -26,8 +26,7 @@ teardown() {
     [ "$status" == "0" ]
     [[ "$output" == *"* feature/my-feature"* ]]
     
-    local -r base_branch="$(git show-branch | grep '\*' | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')"
-    [[ "$base_branch" == "develop" ]]
+    #TODO: Find a way to check for the base branch
 }
 
 @test "Running 'git wize-flow bugfix|release|hotfix publish' after 'git wize-flow feature start my-feature' should throw an error" {
@@ -46,14 +45,14 @@ teardown() {
     [[ "$output" == *"does not exist"* ]]
 }
 
-@test "Running 'git flow feature start' with a repeated branch should throw an error" {
+@test "Running 'git wize-flow feature start' with a repeated branch should throw an error" {
     git wize-flow feature start my-feature
     run git wize-flow feature start my-feature
     [ "$status" != "0" ]
     [[ "$output" == *"Branch 'feature/my-feature' already exists"* ]]
 }
 
-@test "Running 'git wize-flow publish' after 'git wize-flow feature start my-feature' should execute successfully" {
+@test "Running 'git wize-flow feature publish' after 'git wize-flow feature start my-feature' should execute successfully" {
     local -r user_and_hostname="$(whoami)-$(hostname)"
     local -r branch_name="my-feature-$user_and_hostname"
     git wize-flow feature start "$branch_name"
@@ -64,7 +63,7 @@ teardown() {
     [[ "$output" == *"Next step: Open PR"* ]]
 }
 
-@test "Running 'git wize-flow finish' after 'git wize-flow feature publish' executed successfully should validate PR" {
+@test "Running 'git wize-flow feature finish' after 'git wize-flow feature publish' executed successfully should validate PR" {
     
     local -r user_and_hostname="$(whoami)-$(hostname)"
     local -r branch_name="my-feature-$user_and_hostname"
