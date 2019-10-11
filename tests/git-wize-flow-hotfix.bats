@@ -15,54 +15,6 @@ teardown() {
     load common/teardown 
 }
 
-@test "Running 'git wize-flow hotfix start my-hotfix' should create a branch called hotfix/my-hotfix based on top of master" {
-
-    run git wize-flow hotfix start my-hotfix
-    [ "$status" == "0" ]
-    [[ "$output" == *"Switched to a new branch 'hotfix/my-hotfix'"* ]]
-    [[ "$output" == *"Next step: Implement, add and commit"* ]]
-
-    run git branch
-    [ "$status" == "0" ]
-    [[ "$output" == *"* hotfix/my-hotfix"* ]]
-    
-    #TODO: Find a way to check for the base branch
-}
-
-@test "Running 'git wize-flow feature|release|bugfix publish' after 'git wize-flow hotfix start my-hotfix' should throw an error" {
-    git wize-flow hotfix start my-hotfix
-    for workflow in "feature" "release" "bugfix"; do
-        run git wize-flow "$workflow" publish
-        [ "$status" != "0" ]
-        [[ "$output" == *"HEAD is no $workflow branch"* ]]
-    done
-}
-
-@test "Running 'git wize-flow hotfix publish my-hotfix' without a 'hotfix/my-hotfix' branch should throw an error" {
-    run git wize-flow hotfix publish my-hotfix
-    [ "$status" != "0" ]
-    [[ "$output" == *"hotfix/my-hotfix"* ]]
-    [[ "$output" == *"does not exist"* ]]
-}
-
-@test "Running 'git wize-flow hotfix start' with a repeated branch should throw an error" {
-    git wize-flow hotfix start my-hotfix
-    run git wize-flow hotfix start my-hotfix
-    [ "$status" != "0" ]
-    [[ "$output" == *"There is an existing hotfix branch 'my-hotfix'"* ]]
-}
-
-@test "Running 'git wize-flow hotfix publish' after 'git wize-flow hotfix start my-hotfix' should execute successfully" {
-    local -r user_and_hostname="$(whoami)-$(hostname)"
-    local -r branch_name="my-hotfix-$user_and_hostname"
-    git wize-flow hotfix start "$branch_name"
-    run git wize-flow publish
-    [ "$status" == "0" ]
-    [[ "$output" == *"To github.com:wizeline/wize-flow-test.git"* ]]
-    [[ "$output" == *"hotfix/$branch_name -> hotfix/$branch_name"* ]]
-    [[ "$output" == *"Next step: Open PR"* ]]
-}
-
 @test "Running 'git wize-flow hotfix finish' after 'git wize-flow hotfix publish' executed successfully should validate PR" {
     
     local -r user_and_hostname="$(whoami)-$(hostname)"

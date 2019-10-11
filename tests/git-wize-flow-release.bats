@@ -15,54 +15,6 @@ teardown() {
     load common/teardown 
 }
 
-@test "Running 'git wize-flow release start my-release' should create a branch called release/my-release based on top of develop" {
-
-    run git wize-flow release start my-release
-    [ "$status" == "0" ]
-    [[ "$output" == *"Switched to a new branch 'release/my-release'"* ]]
-    [[ "$output" == *"Next step: Implement, add and commit"* ]]
-
-    run git branch
-    [ "$status" == "0" ]
-    [[ "$output" == *"* release/my-release"* ]]
-    
-    #TODO: Find a way to check for the base branch
-}
-
-@test "Running 'git wize-flow feature|release|bugfix publish' after 'git wize-flow release start my-release' should throw an error" {
-    git wize-flow release start my-release
-    for workflow in "feature" "hotfix" "bugfix"; do
-        run git wize-flow "$workflow" publish
-        [ "$status" != "0" ]
-        [[ "$output" == *"HEAD is no $workflow branch"* ]]
-    done
-}
-
-@test "Running 'git wize-flow release publish my-release' without a 'release/my-release' branch should throw an error" {
-    run git wize-flow release publish my-release
-    [ "$status" != "0" ]
-    [[ "$output" == *"release/my-release"* ]]
-    [[ "$output" == *"does not exist"* ]]
-}
-
-@test "Running 'git wize-flow release start' with a repeated branch should throw an error" {
-    git wize-flow release start my-release
-    run git wize-flow release start my-release
-    [ "$status" != "0" ]
-    [[ "$output" == *"There is an existing release branch 'my-release'"* ]]
-}
-
-@test "Running 'git wize-flow release publish' after 'git wize-flow release start my-release' should execute successfully" {
-    local -r user_and_hostname="$(whoami)-$(hostname)"
-    local -r branch_name="my-release-$user_and_hostname"
-    git wize-flow release start "$branch_name"
-    run git wize-flow publish
-    [ "$status" == "0" ]
-    [[ "$output" == *"To github.com:wizeline/wize-flow-test.git"* ]]
-    [[ "$output" == *"release/$branch_name -> release/$branch_name"* ]]
-    [[ "$output" == *"Next step: Open PR"* ]]
-}
-
 @test "Running 'git wize-flow release finish' after 'git wize-flow release publish' executed successfully should validate PR" {
     
     local -r user_and_hostname="$(whoami)-$(hostname)"
