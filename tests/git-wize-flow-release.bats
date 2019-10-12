@@ -94,4 +94,49 @@ teardown() {
     
 }
 
-#TODO @test "Running 'git wize-flow release finish' after a conflict should prompt the user for conflict resolution"
+@test "Running 'git wize-flow release finish' after a conflict should not succeed" {
+    local -r user_and_hostname="$(whoami)-$(hostname)"
+    local -r branch_name="my-release-$user_and_hostname"
+    git wize-flow release start "$branch_name"
+    echo 'First message' > "$user_and_hostname"
+    git add "$user_and_hostname"
+    git commit -m "touching $user_and_hostname"
+    
+    git wize-flow publish
+
+    # Create PR on github from release/$branch_name to develop 
+    local -r pr_link=$(hub pull-request -m "Test PR created by $user_and_hostname" -b develop -h "release/$branch_name")
+    local -r pr_num=$(echo "$pr_link" | grep -Eo '[0-9]+$')
+
+    # Create another clone of the test repository
+    test_dir="$(pwd)"
+    rm -fr "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    mkdir -p "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    cd "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    git clone git@github.com:wizeline/wize-flow-test.git "$(pwd)"
+
+    # Simulate a conflict on master
+    git checkout master
+    echo 'Second message' > "$user_and_hostname"
+    git add "$user_and_hostname"
+    git commit -m "Also touching $user_and_hostname"
+    FORCE_PUSH=true git push origin master
+    
+    # Return to the previous directory and delete the cloned copy
+    cd "$test_dir"
+    rm -fr "$BATS_TMPDIR/$BATS_TEST_NAME-conflict"
+
+    # This will merge the open PR
+    git checkout develop && git merge "release/$branch_name"
+    FORCE_PUSH=true git push origin develop 
+
+    # Sleep one second to wait for back-end API to sync
+    sleep 1
+
+    # Calling finish should not succeed due to conflicts
+    run git wize-flow release finish "$branch_name" "0.2.0"
+    [ "$status" != "0" ]
+    # Ubuntu and MacOS throw different message errors. TODO: It could be a wize-flow bug
+    [[ "$output" == *"Branches 'master' and 'origin/master' have diverged"* || "$output" == *"Automatic merge failed"* ]]
+
+}

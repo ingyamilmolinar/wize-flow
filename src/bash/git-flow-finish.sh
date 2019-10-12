@@ -93,6 +93,17 @@ init_config_params() {
                 ;;
     esac
 
+    # Set target branch for automated merge
+    case "$__git_flow_type" in
+        release)
+                __automated_target_branch=master
+                ;;
+        hotfix)
+                __automated_target_branch=develop
+                ;;
+    esac
+
+
     # Gets latest merged PR num for branch to merge
     local -r merged_pr_num=$(hub pr list -s merged -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
 
@@ -135,8 +146,14 @@ sync_base_branch() {
 
     git checkout "$__base_branch"
     git pull origin "$__base_branch"
-    git checkout "$__target_branch"
-    git pull origin "$__target_branch"
+    if [[ "$__target_branch" != "$__base_branch" ]]; then
+        git checkout "$__target_branch"
+        git pull origin "$__target_branch"
+    fi
+    if [[ "${__automated_target_branch-undefined}" != "undefined" && "$__automated_target_branch" != "$__base_branch" ]]; then
+        git checkout "$__automated_target_branch"
+        git pull origin "$__automated_target_branch"
+    fi
     git checkout "$__branch_to_merge"
     
 }
@@ -144,7 +161,6 @@ sync_base_branch() {
 exec_git_flow_finish() {
     # Hacky way to avoid an unbound error for an empty array.
     # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-    # TODO: Handle conflicts on automated merge
     FORCE_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
 
 }
@@ -165,7 +181,7 @@ function main() {
     validate_hub
     init_config_params
     set_git_flow_opts
-
+    
     sync_base_branch
     exec_git_flow_finish
 

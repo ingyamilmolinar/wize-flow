@@ -94,3 +94,50 @@ teardown() {
     [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository wize-flow-test"* ]]
     
 }
+
+@test "Running 'git wize-flow hotfix finish' after a conflict should not succeed" {
+    local -r user_and_hostname="$(whoami)-$(hostname)"
+    local -r branch_name="my-hotfix-$user_and_hostname"
+    git wize-flow hotfix start "$branch_name"
+    echo 'First message' > "$user_and_hostname"
+    git add "$user_and_hostname"
+    git commit -m "touching $user_and_hostname"
+    
+    git wize-flow publish
+
+    # Create PR on github from hotfix/$branch_name to master 
+    local -r pr_link=$(hub pull-request -m "Test PR created by $user_and_hostname" -b master -h "hotfix/$branch_name")
+    local -r pr_num=$(echo "$pr_link" | grep -Eo '[0-9]+$')
+
+    # Create another clone of the test repository
+    test_dir="$(pwd)"
+    rm -fr "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    mkdir -p "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    cd "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
+    git clone git@github.com:wizeline/wize-flow-test.git "$(pwd)"
+
+    # Simulate a conflict on develop 
+    git checkout develop
+    echo 'Second message' > "$user_and_hostname"
+    git add "$user_and_hostname"
+    git commit -m "Also touching $user_and_hostname"
+    FORCE_PUSH=true git push origin develop
+    
+    # Return to the previous directory and delete the cloned copy
+    cd "$test_dir"
+    rm -fr "$BATS_TMPDIR/$BATS_TEST_NAME-conflict"
+
+    # This will merge the open PR
+    git checkout master && git merge "hotfix/$branch_name"
+    FORCE_PUSH=true git push origin master
+
+    # Sleep one second to wait for back-end API to sync
+    sleep 1
+
+    # Calling finish should not succeed due to conflicts
+    run git wize-flow hotfix finish "$branch_name" "0.2.0"
+    [ "$status" != "0" ]
+    # Ubuntu and MacOS throw different message errors. TODO: It could be a wize-flow bug
+    [[ "$output" == *"Branches 'develop' and 'origin/develop' have diverged"* || "$output" == *"Automatic merge failed"* ]]
+
+}
