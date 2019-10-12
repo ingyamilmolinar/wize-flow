@@ -64,7 +64,7 @@ teardown() {
         git wize-flow "$workflow" start my-branch
         run git wize-flow "$workflow" start my-branch
         [ "$status" != "0" ]
-        #TODO: For hotfix and release the message is different on Linux and MacOS. Could be a wize-flow bug
+        # For hotfix and release the message is different on Ubuntu and MacOS. TODO: Could be a wize-flow bug
         [[ "$output" == *"Branch '$workflow/my-branch' already exists"* || "$output" == *"There is an existing $workflow branch 'my-branch'"* ]]
 
         git checkout develop 
