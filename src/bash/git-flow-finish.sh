@@ -1,10 +1,84 @@
 #!/usr/bin/env bash
 
 usage() {
-
     echo "usage: $__script_name <feature|release|bugfix|hotfix> <branch-name> [tag-version]" 1>&2 
     exit 1
+}
 
+match_branch_prefix() {
+    [[ "$1" == "feature/"* \
+    || "$1" == "bugfix/"* \
+    || "$1" == "hotfix/"* \
+    || "$1" == "release/"* ]]
+}
+
+remove_branch_prefix() {
+    echo $(echo "$1" \
+         | sed "s:feature/::g" \
+         | sed "s:bugfix/::g" \
+         | sed "s:hotfix/::g" \
+         | sed "s:release/::g")
+}
+
+tag_required_for_type() {
+    [[ "$1" == "release" || "$1" == "hotfix" ]]
+}
+
+current_branch() {
+    echo "$(git branch | grep '\*' | sed 's/\* //g')"
+}
+
+merged_pr_from_to() {
+    local -r branch_to_merge="$1"
+    local -r target_branch="$2"
+    echo "$(hub pr list -s merged -h "$branch_to_merge" -b "$target_branch" \
+          | head -n1 \
+          | awk '{print $1}' \
+          | sed 's/\#//')"
+}
+
+last_pr_from_to() {
+    local -r branch_to_merge="$1"
+    local -r target_branch="$2"
+    echo "$(hub pr list -h "$branch_to_merge" -b "$target_branch" \
+          | head -n1 \
+          | awk '{print $1}' \
+          | sed 's/\#//')"
+}
+
+github_username() {
+    echo "$(grep -A 1 'remote \"origin\"' .git/config \
+          | grep -o ':.*/' \
+          | sed 's/://g' \
+          | sed 's:/::g')"
+}
+
+github_repository() {
+    echo "$(grep -A 1 'remote \"origin\"' .git/config \
+          | grep -o '/.*\.' \
+          | sed 's:/::g' \
+          | sed 's:\.::g')"
+}
+
+last_commit_hash_from_branch() {
+    echo "$(git log "$1" | head -n 1 | awk '{print $2}')"
+}
+
+last_commit_hash_from_pr() {
+    local -r github_username="$1"
+    local -r github_repository="$2"
+    local -r pr_number="$3"
+    echo "$(hub api "/repos/$github_username/$github_repository/pulls/$pr_number/commits" \
+         | python -c 'import json,sys; json_object=json.load(sys.stdin); print json_object[-1]["sha"];')"
+}
+
+merged_status_from_pr() {
+    local -r github_username="$1"
+    local -r github_repository="$2"
+    local -r pr_number="$3"
+    echo "$(hub api "/repos/$github_username/$github_repository/pulls/$pr_number" \
+         | python -m json.tool \
+         | grep 'merged')"
 }
 
 validate_inputs() {
@@ -23,27 +97,29 @@ validate_inputs() {
         echo "Not enough arguments: Branch name is mandatory" 1>&2
         usage
     else
-        if [[ "$__branch_name" == "feature/"* || "$__branch_name" == "bugfix/"* || "$__branch_name" == "hotfix/"* || "$__branch_name" == "release/"* ]]; then
-            local -r sanitized_branch=$(echo "$__branch_name" | sed "s:feature/::g" | sed "s:bugfix/::g" | sed "s:hotfix/::g" | sed "s:release/::g" )
+        if match_branch_prefix "$__branch_name"; then
+            local -r sanitized_branch=remove_branch_prefix "$__branch_name"
             echo "Incorrect argument: Branch name contains feature|release|bugfix|hotfix" 1>&2
             echo "Did you mean? $sanitized_branch" 1>&2
             usage
         fi
     fi
 
-    if [[ ( "$__git_flow_type" == "release" || "$__git_flow_type" == "hotfix" ) && "$__tag_version" == "undefined" ]]; then
+    if tag_required_for_type "$__git_flow_type" && \
+        [[ "$__tag_version" == "undefined" ]]; then
         echo "Not enough arguments: Version tag is mandatory for release|hotfix workflows" 1>&2
         usage
     fi
 
-    if [[ "$__tag_version" != "undefined" && ( "$__git_flow_type" != "release" && "$__git_flow_type" != "hotfix" ) ]]; then
+    if ! tag_required_for_type "$__git_flow_type" && \
+        [[ "$__tag_version" != "undefined" ]]; then
         echo "Version tag is only required for release|hotfix workflows" 1>&2
         usage
     fi
 
     local -r max_amount_of_args=3
     if [[ "$#" > "$max_amount_of_args" ]]; then
-        echo "Too many arguments: $# is greater thant the maximum amount of arguments supported" 1>&2
+        echo "Too many arguments: $# is greater than the maximum amount of arguments supported" 1>&2
         usage
     fi
     shift "$(( $max_amount_of_args - 1 ))"
@@ -58,7 +134,7 @@ validate_inputs() {
 
 validate_hub() {
 
-    if ! hub pr list -h "$(git branch | grep '\*' | sed 's/\* //g')" &>/dev/null; then
+    if ! hub pr list -h current_branch &>/dev/null; then
         if ! git remote | grep '.'; then
             echo "ERROR: You need to add a remote pointing to a GitHub repository" 1>&2
         else
@@ -71,8 +147,7 @@ validate_hub() {
 
 init_config_params() {
 
-    # Get base branch
-    #TODO: Make this flexible. Bugfix can branch out from release or from feature!
+    # Get base branch. TODO: Find a way to avoid hardcoding this
     case "$__git_flow_type" in
         feature|bugfix|release)
                 __base_branch=develop
@@ -83,7 +158,6 @@ init_config_params() {
     esac
 
     # Set target branch for PR
-    #TODO: Make this flexible. Bugfix can merge back to release or feature!
     case "$__git_flow_type" in
         feature|bugfix|release)
                 __target_branch=develop
@@ -103,29 +177,29 @@ init_config_params() {
                 ;;
     esac
 
+    local -r merged_pr_num=$(merged_pr_from_to "$__branch_to_merge" "$__target_branch")
+    local -r github_username=$(github_username)
+    local -r github_repository=$(github_repository)
+    local -r current_branch_last_commit_hash=$(last_commit_hash_from_branch "$__branch_to_merge")
+    if [[ -n "$merged_pr_num" ]]; then
+        local -r pr_last_commit_hash=$(last_commit_hash_from_pr \
+                                       "$github_username" \
+                                       "$github_repository" \
+                                       "$merged_pr_num")
+    fi
 
-    # Gets latest merged PR num for branch to merge
-    local -r merged_pr_num=$(hub pr list -s merged -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
+    if [[ -z "$merged_pr_num" \
+        || "$(merged_status_from_pr $github_username $github_repository $merged_pr_num)" != *"true"* \
+        || "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
 
-    # Gets Github username from .git/config
-    local -r github_username=$(grep -A 1 'remote \"origin\"' .git/config | grep -o ':.*/' | sed 's/://g' | sed 's:/::g')
-
-    # Gets Github repository from .git/config
-    local -r github_repository=$(grep -A 1 'remote \"origin\"' .git/config | grep -o '/.*\.' | sed 's:/::g' | sed 's:\.::g')
-    
-    
-    local -r current_branch_last_commit_hash=$(git log "$__branch_to_merge" | head -n 1 | awk '{print $2}')
-    [[ -n "$merged_pr_num" ]] && local -r pr_last_commit_hash=$(hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num/commits" | python -c 'import json,sys;json_object=json.load(sys.stdin);print json_object[-1]["sha"];')
-
-    if [[ -z "$merged_pr_num" ]] || ! hub api "/repos/$github_username/$github_repository/pulls/$merged_pr_num" | python -m json.tool | grep 'merged' | grep 'true' &>/dev/null || [[ "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
-        # Gets latest non-merged PR num for current branch
-        local -r non_merged_pr_num=$(hub pr list -h "$__branch_to_merge" -b "$__target_branch" | head -n1 | awk '{print $1}' | sed 's/\#//')
+        local -r non_merged_pr_num=$(last_pr_from_to "$__branch_to_merge" "$__target_branch")
         if [[ -z "${non_merged_pr_num}" ]]; then
             echo "No PR has been created from $__branch_to_merge to $__target_branch on repository $github_repository" 1>&2
         else
             echo "The PR $non_merged_pr_num on repository $github_repository has not been merged" 1>&2
         fi
         exit 1
+
     fi
 
 }
@@ -136,7 +210,8 @@ set_git_flow_opts() {
     case "$__git_flow_type" in
         release|hotfix)
             # TOFIX: We are using tag-version for the tag-message too
-            __git_flow_finish_options=("--tagname" "$__tag_version" "--message" "$__tag_version")
+            __git_flow_finish_options=("--tagname" "$__tag_version" \
+                                       "--message" "$__tag_version")
             ;;
     esac
 
@@ -150,7 +225,8 @@ sync_base_branch() {
         git checkout "$__target_branch"
         git pull origin "$__target_branch"
     fi
-    if [[ "${__automated_target_branch-undefined}" != "undefined" && "$__automated_target_branch" != "$__base_branch" ]]; then
+    if [[ "${__automated_target_branch-undefined}" != "undefined" \
+        && "$__automated_target_branch" != "$__base_branch" ]]; then
         git checkout "$__automated_target_branch"
         git pull origin "$__automated_target_branch"
     fi
@@ -161,12 +237,13 @@ sync_base_branch() {
 exec_git_flow_finish() {
     # Hacky way to avoid an unbound error for an empty array.
     # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-    FORCE_PUSH=true git flow "$__git_flow_type" finish "$__branch_name" "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
+    FORCE_PUSH=true git flow "$__git_flow_type" \
+                    finish "$__branch_name" \
+                    "${__git_flow_finish_options[@]+${__git_flow_finish_options[@]}}"
 
 }
 
-####### SCRIPT START #######
-function main() {
+main() {
 
     # We do not want the script to exit on failed scripts
     set +o errexit
@@ -186,6 +263,5 @@ function main() {
     exec_git_flow_finish
 
 }
-####### SCRIPT END #######
 
 main "$@"

@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
 main() {
+
+    # We do not want the script to exit on failed scripts
+    set +o errexit
+    # We do not want to exit on error inside any functions or subshells.
+    set +o errtrace
+    # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+    set -o nounset
+    # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+    set -o pipefail
+
     case "$1" in
         bash)
                 # Default for bash is unit tests
@@ -19,7 +29,9 @@ main() {
     i=0
     test_names=()
     for arg in "$@"; do
-        [[ "$i" -gt 0 ]] && test_names=("${test_names[@]}" "$(dirname $0)/tests/$(echo "$arg" | sed 's:tests::' | sed 's:/::g' | sed 's/.bats$//').bats")
+        # Hacky way to avoid an unbound error for an empty array.
+        # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
+        [[ "$i" -gt 0 ]] && test_names=("${test_names[@]+${test_names[@]}}" "$(dirname $0)/tests/$(echo "$arg" | sed 's:tests::' | sed 's:/::g' | sed 's/.bats$//').bats")
         ((i++))
     done 
 
@@ -65,16 +77,16 @@ verify_and_set_synchronization_flag() {
                 echo "You can manually remove lock by runnning 'rm ~/.wize-flow.lock'" 2>&1
                 exit 1
             else
-                # Remove tags oldest than 15 minutes
+                # Remove tags oldest than 30 minutes
                 echo "Remote integration test found. Verifying staleness..."
                 remote_tag_age_in_secs="$(get_remote_tag_age_in_secs)"
                 echo "Current remote test duration: $remote_tag_age_in_secs seconds"
-                [[ $remote_tag_age_in_secs -ge 900 ]] && remove_current_remote_tag
+                [[ $remote_tag_age_in_secs -ge 1800 ]] && remove_current_remote_tag
 
                 #Auto retry logic
                 i=0
                 while remote_test_is_running; do
-                    [[ $i -eq 10 ]] && echo "Retried too many times. Exiting..." 2>&1 && exit 1
+                    [[ $i -eq 20 ]] && echo "Retried 20 times every 30 seconds. Exiting..." 2>&1 && exit 1
                     echo "Integration test running remotely. Retrying in 30 seconds..."
                     sleep 30
                     ((i++))
@@ -106,7 +118,7 @@ verify_and_set_synchronization_flag() {
 }
 
 remove_synchronization_flag() {
-    [[ "${1-undefined}" != "undefined" ]] && trap - INT TERM EXIT 
+    [[ "${1-undefined}" != "undefined" ]] && trap '' INT TERM EXIT 
     if [[ "$INTEGRATION_TESTS" == "true" && -f ~/.wize-flow.lock ]]; then
         echo "Releasing synchronization lock..."
         # We remove the created tag on wize-flow-test master to allow for other integration test executions
