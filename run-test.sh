@@ -31,7 +31,13 @@ main() {
     for arg in "$@"; do
         # Hacky way to avoid an unbound error for an empty array.
         # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-        [[ "$i" -gt 0 ]] && test_names=("${test_names[@]+${test_names[@]}}" "$(dirname $0)/tests/$(echo "$arg" | sed 's:tests::' | sed 's:/::g' | sed 's/.bats$//').bats")
+        if [[ "$i" -gt 0 ]]; then
+            test_names=("${test_names[@]+${test_names[@]}}" \
+                        "$(dirname $0)/tests/$(echo "$arg" \
+                            | sed 's:tests::' \
+                            | sed 's:/::g' \
+                            | sed 's/.bats$//').bats")
+        fi 
         ((i++))
     done 
 
@@ -48,7 +54,10 @@ remote_test_is_running() {
 }
 
 get_remote_tag_age_in_secs() {
-    last_tag_creation_secs="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test | awk '{print $2}' | grep 'INTEGRATION_TEST_RUNNING' | sed 's:refs/tags/INTEGRATION_TEST_RUNNING-::')"
+    last_tag_creation_secs="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test \
+                            | awk '{print $2}' \
+                            | grep 'INTEGRATION_TEST_RUNNING' \
+                            | sed 's:refs/tags/INTEGRATION_TEST_RUNNING-::')"
     current_date_secs="$(date +%s)"
     remote_tag_age_in_secs=$(($current_date_secs - $last_tag_creation_secs))
     echo "$remote_tag_age_in_secs"
@@ -56,7 +65,9 @@ get_remote_tag_age_in_secs() {
 
 remove_remote_tag() {
     local -r current_dir="$(pwd)"
-    [[ ! -d "/tmp/wize-flow-test/.git" ]] && git clone git@github.com:wizeline/wize-flow-test /tmp/wize-flow-test &>/dev/null
+    if [[ ! -d "/tmp/wize-flow-test/.git" ]]; then
+        git clone git@github.com:wizeline/wize-flow-test /tmp/wize-flow-test &>/dev/null
+    fi
     cd /tmp/wize-flow-test
     git push origin --delete "refs/tags/$1" &>/dev/null
     cd "$current_dir"
@@ -64,7 +75,10 @@ remove_remote_tag() {
 }
 
 remove_current_remote_tag() {
-    tag_to_delete="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test | awk '{print $2}' | grep 'INTEGRATION_TEST_RUNNING' | sed 's:refs/tags/::')"
+    tag_to_delete="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test \
+                    | awk '{print $2}' \
+                    | grep 'INTEGRATION_TEST_RUNNING' \
+                    | sed 's:refs/tags/::')"
     remove_remote_tag "$tag_to_delete" 
 }
 
@@ -73,8 +87,8 @@ verify_and_set_synchronization_flag() {
         # We create a local file for local synchronization and a tag on wize-flow-test master to synchronize remote executions
         if [[ -f ~/.wize-flow.lock ]] || remote_test_is_running; then 
             if [[ -f ~/.wize-flow.lock ]]; then
-                echo "Integration test currently running locally. Try again later" 2>&1
-                echo "You can manually remove lock by runnning 'rm ~/.wize-flow.lock'" 2>&1
+                echo "Integration test currently running locally. Try again later" 1>&2
+                echo "You can manually remove lock by runnning 'rm ~/.wize-flow.lock'" 1>&2
                 exit 1
             else
                 # Remove tags oldest than 30 minutes
@@ -86,7 +100,10 @@ verify_and_set_synchronization_flag() {
                 #Auto retry logic
                 i=0
                 while remote_test_is_running; do
-                    [[ $i -eq 20 ]] && echo "Retried 20 times every 30 seconds. Exiting..." 2>&1 && exit 1
+                    if [[ $i -eq 20 ]]; then
+                        echo "Retried 20 times every 30 seconds. Exiting..." 1>&2
+                        exit 1
+                    fi
                     echo "Integration test running remotely. Retrying in 30 seconds..."
                     sleep 30
                     ((i++))
@@ -109,7 +126,8 @@ verify_and_set_synchronization_flag() {
             cd "$current_dir"
             rm -fr /tmp/wize-flow-test
             rm -f ~/.wize-flow.lock
-            echo "Error occurred while trying to acquire lock. Probably another execution got here first. Try again later" 2>&1
+            echo "Error occurred while trying to acquire lock" 1>&2
+            echo "Probably another execution got here first. Try again later" 1>&2
             exit 1
         else
             cd "$current_dir"
