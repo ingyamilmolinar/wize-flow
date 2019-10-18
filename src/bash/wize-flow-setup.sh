@@ -14,7 +14,7 @@ function init() {
         exit 1
     fi
 
-    if [[ $(git branch 2>&1 | grep 'not a git repository') ]]; then
+    if git branch 2>&1 | grep -q 'not a git repository'; then
         if [[ -z $(git config --global user.name) || -z $(git config --global user.email) ]]; then
             echo "Please set up your global git user information first with: " 1>&2
             echo "     git config --add --global user.name <username>" 1>&2
@@ -31,7 +31,7 @@ function init() {
         exit 1
     fi
    
-    if [[ ! $(git remote | grep 'origin') ]]; then
+    if git remote | ( ! grep -q 'origin' ); then
         echo "Adding remote..."
         git remote add origin "$__remote"
     fi
@@ -39,14 +39,14 @@ function init() {
     # Get current branch before changing
     local -r current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
     git fetch --prune
-    if [[ $(git branch -a | grep 'remotes/origin/develop') ]]; then
+    if git branch -a | grep -q 'remotes/origin/develop'; then
         echo "Pulling remote develop branch..."
         if [[ ! $(git checkout develop && git pull origin develop) ]]; then
             echo "There was an issue pulling develop branch. Please verify and try again" 1>&2
             exit 1
         fi
     fi
-    if [[ $(git branch -a | grep 'remotes/origin/master') ]]; then
+    if git branch -a | grep -q 'remotes/origin/master'; then
         echo "Pulling remote master branch..."
         if [[ ! $(git checkout master && git pull origin master) ]]; then
             echo "There was an issue pulling master branch. Please verify and try again" 1>&2
@@ -54,13 +54,13 @@ function init() {
         fi
     fi
 
-    if [[ ! $(git branch | grep 'develop') ]]; then
+    if git branch | ( ! grep -q 'develop' ); then
         echo "Creating develop branch..."
         git checkout -b develop 
     fi
 
     # Switch back to saved branch
-    if [[ ! -z "$current_branch" && "$current_branch" != "HEAD" ]]; then
+    if [[ -n "$current_branch" && "$current_branch" != "HEAD" ]]; then
         git checkout "$current_branch"
     fi
 
@@ -77,11 +77,11 @@ function init() {
                         --local
     git config --add gitflow.origin origin
     
-    if [[ ! $(git branch -a | grep ' remotes/origin/master') ]]; then
+    if git branch -a | grep -q ' remotes/origin/master'; then
         echo "Pushing master branch to remote..."
         git push -u origin master
     fi
-    if [[ ! $(git branch -a | grep ' remotes/origin/develop') ]]; then
+    if git branch -a | grep -q ' remotes/origin/develop'; then
         echo "Pushing develop branch to remote..."
         git push -u origin develop
     fi
@@ -143,8 +143,8 @@ function main {
     set +o errtrace
     # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
     set -o nounset
-    # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
-    set -o pipefail
+    # Do not catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+    set +o pipefail
 
     [[ "$#" -lt 1 || "$#" -gt 3 ]] && usage
     

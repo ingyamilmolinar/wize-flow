@@ -31,7 +31,7 @@ jobs:
                 command: apt-get -y install shellcheck
             - run:
                 name: Check bash scripts
-                command: su - circleci -c "find project/src/bash -type f | xargs shellcheck --external-sources --shell=bash --exclude=SC2143,SC2004,SC2236"
+                command: su - circleci -c "( ls project/*.sh | sed 's:\*::'; find project/src/bash project/src/common -type f ) | xargs shellcheck --external-sources --shell=bash"
             - run:
                 name: Install wize-flow and verify
                 command: su - circleci -c "./project/wize-flow-install.sh bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"

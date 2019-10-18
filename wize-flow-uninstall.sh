@@ -4,7 +4,10 @@ function usage() {
     echo "wize-flow-uninstall.sh [--force]" 1>&2
 }
 
-[[ "$#" > "1" ]] && usage && exit 1
+if [[ "$#" -gt 1 ]]; then
+    usage
+    exit 1
+fi
 
 if [[ ! -d "/usr/local/opt/wize-flow" && "$1" != "--force" ]]; then
     echo "Wize-flow has not been installed. Run wize-flow-install.sh to install" 1>&2

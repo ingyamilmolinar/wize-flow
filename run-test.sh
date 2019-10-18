@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2068
 
 main() {
 
@@ -22,7 +23,7 @@ main() {
                 ;;
         *)
                 echo "Implementation required. Run with options <bash|joker>"
-                exit -1
+                exit 1
                 ;;
     esac
 
@@ -33,7 +34,7 @@ main() {
         # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
         if [[ "$i" -gt 0 ]]; then
             test_names=("${test_names[@]+${test_names[@]}}" \
-                        "$(dirname $0)/tests/$(echo "$arg" \
+                        "$(dirname "$0")/tests/$(echo "$arg" \
                             | sed 's:tests::' \
                             | sed 's:/::g' \
                             | sed 's/.bats$//').bats")
@@ -41,7 +42,7 @@ main() {
         ((i++))
     done 
 
-    [[ "${2-undefined}" == "undefined" ]] && test_names=("$(dirname $0)/tests/*.bats")
+    [[ "${2-undefined}" == "undefined" ]] && test_names=("$(dirname "$0")/tests/*.bats")
 
     verify_and_set_synchronization_flag
     INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats ${test_names[@]}
@@ -59,7 +60,7 @@ get_remote_tag_age_in_secs() {
                             | grep 'INTEGRATION_TEST_RUNNING' \
                             | sed 's:refs/tags/INTEGRATION_TEST_RUNNING-::')"
     current_date_secs="$(date +%s)"
-    remote_tag_age_in_secs=$(($current_date_secs - $last_tag_creation_secs))
+    remote_tag_age_in_secs=$((current_date_secs - last_tag_creation_secs))
     echo "$remote_tag_age_in_secs"
 }
 

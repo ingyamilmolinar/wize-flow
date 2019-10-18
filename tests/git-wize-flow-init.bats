@@ -77,7 +77,6 @@ teardown() {
 
 }
 
-#TODO: @test "Running 'git wize-flow init' without arguments in an already initialized repository should execute succesfully"
+#TODO: @test "Running 'git wize-flow init' without arguments in an already initialized repository should fail"
 
 #TODO: @test "Running 'git wize-flow init' on an existing directory with git initialized should execute succesfully"
-

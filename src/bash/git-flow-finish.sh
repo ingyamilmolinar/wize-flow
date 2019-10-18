@@ -13,11 +13,11 @@ match_branch_prefix() {
 }
 
 remove_branch_prefix() {
-    echo $(echo "$1" \
+    echo "$1" \
          | sed "s:feature/::g" \
          | sed "s:bugfix/::g" \
          | sed "s:hotfix/::g" \
-         | sed "s:release/::g")
+         | sed "s:release/::g"
 }
 
 tag_required_for_type() {
@@ -25,60 +25,60 @@ tag_required_for_type() {
 }
 
 current_branch() {
-    echo "$(git branch | grep '\*' | sed 's/\* //g')"
+    git branch | grep '\*' | sed 's/\* //g'
 }
 
 merged_pr_from_to() {
     local -r branch_to_merge="$1"
     local -r target_branch="$2"
-    echo "$(hub pr list -s merged -h "$branch_to_merge" -b "$target_branch" \
+    hub pr list -s merged -h "$branch_to_merge" -b "$target_branch" \
           | head -n1 \
           | awk '{print $1}' \
-          | sed 's/\#//')"
+          | sed 's/\#//'
 }
 
 last_pr_from_to() {
     local -r branch_to_merge="$1"
     local -r target_branch="$2"
-    echo "$(hub pr list -h "$branch_to_merge" -b "$target_branch" \
+    hub pr list -h "$branch_to_merge" -b "$target_branch" \
           | head -n1 \
           | awk '{print $1}' \
-          | sed 's/\#//')"
+          | sed 's/\#//'
 }
 
 github_username() {
-    echo "$(grep -A 1 'remote \"origin\"' .git/config \
+    grep -A 1 'remote \"origin\"' .git/config \
           | grep -o ':.*/' \
           | sed 's/://g' \
-          | sed 's:/::g')"
+          | sed 's:/::g'
 }
 
 github_repository() {
-    echo "$(grep -A 1 'remote \"origin\"' .git/config \
+    grep -A 1 'remote \"origin\"' .git/config \
           | grep -o '/.*\.' \
           | sed 's:/::g' \
-          | sed 's:\.::g')"
+          | sed 's:\.::g'
 }
 
 last_commit_hash_from_branch() {
-    echo "$(git log "$1" | head -n 1 | awk '{print $2}')"
+    git log "$1" | head -n 1 | awk '{print $2}'
 }
 
 last_commit_hash_from_pr() {
     local -r github_username="$1"
     local -r github_repository="$2"
     local -r pr_number="$3"
-    echo "$(hub api "/repos/$github_username/$github_repository/pulls/$pr_number/commits" \
-         | python -c 'import json,sys; json_object=json.load(sys.stdin); print json_object[-1]["sha"];')"
+    hub api "/repos/$github_username/$github_repository/pulls/$pr_number/commits" \
+         | python -c 'import json,sys; json_object=json.load(sys.stdin); print json_object[-1]["sha"];'
 }
 
 merged_status_from_pr() {
     local -r github_username="$1"
     local -r github_repository="$2"
     local -r pr_number="$3"
-    echo "$(hub api "/repos/$github_username/$github_repository/pulls/$pr_number" \
+    hub api "/repos/$github_username/$github_repository/pulls/$pr_number" \
          | python -m json.tool \
-         | grep 'merged')"
+         | grep 'merged'
 }
 
 validate_inputs() {
@@ -122,7 +122,7 @@ validate_inputs() {
         echo "Too many arguments: $# is greater than the maximum amount of arguments supported" 1>&2
         usage
     fi
-    shift "$(( $max_amount_of_args - 1 ))"
+    shift "$(( max_amount_of_args - 1 ))"
     
     readonly __branch_to_merge="$__git_flow_type/$__branch_name"
     if ! git branch | grep " $__branch_to_merge$" &>/dev/null; then
@@ -189,7 +189,7 @@ init_config_params() {
     fi
 
     if [[ -z "$merged_pr_num" \
-        || "$(merged_status_from_pr $github_username $github_repository $merged_pr_num)" != *"true"* \
+        || "$(merged_status_from_pr "$github_username" "$github_repository" "$merged_pr_num")" != *"true"* \
         || "${pr_last_commit_hash-undefined}" != "$current_branch_last_commit_hash" ]]; then
 
         local -r non_merged_pr_num=$(last_pr_from_to "$__branch_to_merge" "$__target_branch")

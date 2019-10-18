@@ -65,7 +65,7 @@ tag_required_for_type() {
 }
 
 current_git_branch() {
-    echo "$(git rev-parse --abbrev-ref HEAD)"
+    git rev-parse --abbrev-ref HEAD
 }
 
 set_branch_name() {

@@ -17,9 +17,9 @@ if [[ "$1" != "bash" && "$1" != "joker" ]]; then
 fi
 
 #TODO: Catch and handle manual aborts on all scripts
-if [[ $(uname -a | grep 'Darwin') ]]; then
+if uname -a | grep -q 'Darwin'; then
     
-    if [ ! $(which brew) ]; then
+    if [ ! "$(command -v brew)" ]; then
         echo "Installing homebrew..."
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null
     fi
@@ -36,19 +36,26 @@ if [[ $(uname -a | grep 'Darwin') ]]; then
             ;;
     esac
 
-elif [[ $(uname -a | grep 'Linux') ]]; then
+elif uname -a | grep -q 'Linux'; then
 
     # Linuxbrew will help with Linux interop
     # It's too fucking slow though
     echo "Installing linuxbrew dependencies..."
-    [[ $(which apt-get) ]] && sudo apt-get update && sudo apt-get install -y build-essential curl file git
-    [[ $(which yum) ]] && sudo yum update && sudo yum groupinstall 'Development Tools' && sudo yum install -y curl file git libxcrypt-compat
+    if [[ $(command -v apt-get) ]]; then
+        sudo apt-get update && \
+        sudo apt-get install -y build-essential curl file git
+    fi
+    if [[ $(command -v yum) ]]; then
+        sudo yum update && \
+        sudo yum groupinstall 'Development Tools' && \
+        sudo yum install -y curl file git libxcrypt-compat
+    fi
 
-    if [ ! $(which brew) ]; then
+    if [ ! "$(command -v brew)" ]; then
         echo "Installing linuxbrew..."
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)" </dev/null
-        test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
-        test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+        test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+        test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
         echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
     fi
@@ -71,9 +78,9 @@ else
 fi
 
 echo "Installing wize-flow..."
-readonly init_script_relative_path="$(dirname $0)"/src/"$1"
+readonly init_script_relative_path="$(dirname "$0")"/src/"$1"
 
-sudo chown $(whoami) /usr/local /usr/local/bin
+sudo chown "$(whoami)" /usr/local /usr/local/bin
 mkdir -p /usr/local/opt/wize-flow
 # Order matters in the next two commands. We override git-wize-flow on purpose
 cp -f "$init_script_relative_path"/../common/* /usr/local/opt/wize-flow
