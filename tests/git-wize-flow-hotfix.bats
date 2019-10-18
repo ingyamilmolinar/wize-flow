@@ -53,7 +53,10 @@ teardown() {
     sleep 1
 
     # Calling finish with merged PR should succeed
-    run git wize-flow hotfix finish "$branch_name" "0.1.1"
+    #run git wize-flow hotfix finish "$branch_name" "0.1.1"
+    run bash -c "git wize-flow hotfix finish $branch_name 0.1.1"
+    echo "status $status"
+    echo "output $output"
     [ "$status" == "0" ]
     # TODO: Next commented line fails. It must be a bug on wize-flow
     # [[ "$output" != *"branch 'hotfix/$branch_name' has been merged into 'master'"* ]]

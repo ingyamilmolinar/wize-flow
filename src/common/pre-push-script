@@ -1,23 +1,39 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2001,SC2063
 
 # This script will prevent direct pushes to develop and master branches if FORCE_PUSH is different than true
 
-branches_to_push=""
-while read localname localhash remotename remotehash; do
-    branches_to_push="$branches_to_push $(echo $remotename | sed s:refs/heads/::)"
-done
+main() {
 
-protected_main_branch='master'
-protected_dev_branch='develop'
-push_command=$(ps -ocommand= -p $PPID)
-current_branch=$(git rev-parse --abbrev-ref HEAD)
+    # Parse the execution arguments. See: https://www.git-scm.com/docs/githooks#_pre_push 
+    branches_to_push=()
+    while read -r localname localhash remotename remotehash; do
+        branches_to_push=("${branches_to_push[@]}" "$(echo "$remotename" | sed s:refs/heads/::)")
+    done
 
-current_upstream_branch=$(git branch -vv | grep \* | grep "origin/$current_branch")
-[[ ! -z "$current_upstream_branch" ]] && current_branch_upstreamed="true"
+    protected_main_branch='master'
+    protected_dev_branch='develop'
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-if [[ "$@" == *"origin"* && ( "$branches_to_push" == *" $protected_main_branch"* || "$branches_to_push" == *" $protected_dev_branch"* || ( ( "$current_branch" == "$protected_main_branch" || "$current_branch" == "$protected_dev_branch" ) && "$current_branch_upstreamed" == "true" && -z $branches_to_push ) ) && $FORCE_PUSH != "true" ]]; then
-    echo 'You cannot push directly to develop or master on origin'
-    exit 1
-else
-    exit 0
-fi
+    current_upstream_branch=$(git branch -vv | grep '*' | grep "origin/$current_branch")
+    if [[ -n "$current_upstream_branch" ]]; then
+        current_branch_upstreamed="true"
+    fi
+
+    if [[ "$*" == *"origin"* && \
+            ( "${branches_to_push[*]}" == *"$protected_main_branch"* \
+            || "${branches_to_push[*]}" == *"$protected_dev_branch"* \
+                    || ( ( "$current_branch" == "$protected_main_branch" \
+                        || "$current_branch" == "$protected_dev_branch" ) \
+                    && "$current_branch_upstreamed" == "true" \
+                    && "${#branches_to_push[@]}" == 0 ) ) \
+        && $FORCE_PUSH != "true" ]]; then
+        echo 'You cannot push directly to develop or master on origin'
+        exit 1
+    else
+        exit 0
+    fi
+
+}
+
+main "$@"

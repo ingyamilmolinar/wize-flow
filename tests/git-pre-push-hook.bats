@@ -19,8 +19,20 @@ teardown() {
     [[ "$output" == *"You cannot push directly"* ]]
 }
 
+@test "Running 'git push origin --delete develop' should fail" {
+    run git push --delete origin develop
+    [ "$status" != "0" ]
+    [[ "$output" == *"You cannot push directly"* ]]
+}
+
 @test "Running 'git push origin master' should fail" {
     run git push origin master
+    [ "$status" != "0" ]
+    [[ "$output" == *"You cannot push directly"* ]]
+}
+
+@test "Running 'git push origin --delete master' should fail" {
+    run git push --delete origin master 
     [ "$status" != "0" ]
     [[ "$output" == *"You cannot push directly"* ]]
 }
