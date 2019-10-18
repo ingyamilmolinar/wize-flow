@@ -6,4 +6,9 @@ if [[ -z "$BATS_TMPDIR" || -z "$BATS_TEST_NAME" ]]; then
     exit 1
 fi
 
-rm -fr "$BATS_TMPDIR"/"$BATS_TEST_NAME"
+if [[ "$2" != "skip_uninstall" ]]; then
+    "$BATS_TEST_DIRNAME"/../wize-flow-uninstall.sh \
+        "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
+        --ignore-dependencies
+fi
+rm -fr "$WIZE_FLOW_TEST_BASE"

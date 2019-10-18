@@ -1,2 +1,7 @@
 #!/usr/bin/env bash
-exec "/usr/local/opt/wize-flow/git-wize-flow" "$@"
+if [[ ! -d "${WIZE_FLOW_DIR-/usr/local/opt/wize-flow}" ]]; then
+    echo "wize-flow could not be found on the default directory or under WIZE_FLOW_DIR" 1>&2
+    echo "Make sure it is installed" 1>&2
+    exit 1
+fi
+exec "${WIZE_FLOW_DIR-/usr/local/opt/wize-flow}/wize-flow" "$@"
