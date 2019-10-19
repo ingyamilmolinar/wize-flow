@@ -30,8 +30,8 @@ teardown() {
 @test "Running 'git wize-flow init' with an invalid github repository should throw error" {
     
     # This function only work with the bash implementation
-    # Does not cause an issue on integration tests since git@github.com:fakeorg/fakerepo.git is very likely an unexistant repository
-    function git() {
+    # Does not cause an issue on integration tests since git@github.com:fakeorg/fakerepo.git is unlikely to be an existant repository
+    git() {
         if [[ "$1" == "ls-remote" && "$2" == "git@github.com:fakeorg/fakerepo.git" ]]; then
             return 1
         fi 
