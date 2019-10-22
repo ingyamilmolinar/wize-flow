@@ -10,7 +10,7 @@ main() {
     # Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
     set -o nounset
     # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
-    set -o pipefail
+    set +o pipefail
 
     case "$1" in
         bash)
@@ -44,9 +44,37 @@ main() {
 
     [[ "${2-undefined}" == "undefined" ]] && test_names=("$(dirname "$0")/tests/*.bats")
 
+    verify_dependencies "$INTEGRATION_TESTS"
+
     verify_and_set_synchronization_flag
     INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats ${test_names[@]}
     remove_synchronization_flag "$?"
+}
+
+verify_dependencies() {
+
+    local -r integration_tests="$1"
+    if [[ "$integration_tests" == "true" ]]; then
+        if ! hub 2>&1 | grep -q 'usage'; then
+            echo "'hub' is not installed and is required to run integration tests" 1>&2
+            exit 1
+        fi
+    fi
+
+    if ! git 2>&1 | grep -q 'usage'; then
+        echo "'git' is not installed and is required to run integration tests" 1>&2
+        exit 1
+    fi
+
+    if git flow 2>&1 | grep -q 'is not a git command'; then
+        echo "'git-flow-avh' is not installed and is required to run integration tests" 1>&2
+        exit 1
+    fi
+
+    if ! bats 2>&1 | grep -q 'Bats'; then
+        echo "'bats' is not installed and is required to run the tests" 1>&2
+        exit 1
+    fi
 }
 
 remote_test_is_running() {

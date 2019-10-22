@@ -6,15 +6,23 @@ if [[ -z "$BATS_TMPDIR" || -z "$BATS_TEST_NAME" ]]; then
     exit 1
 fi
 
-rm -fr "$BATS_TMPDIR"/"$BATS_TEST_NAME"
-mkdir -p "$BATS_TMPDIR"/"$BATS_TEST_NAME"/wize-flow-install
-mkdir -p "$BATS_TMPDIR"/"$BATS_TEST_NAME"/git-repository
+WIZE_FLOW_TEST_BASE="$BATS_TMPDIR/$BATS_TEST_NAME"
+WIZE_FLOW_TEST_INSTALL="$WIZE_FLOW_TEST_BASE/wize-flow-install"
+WIZE_FLOW_TEST_GIT_REPO="$WIZE_FLOW_TEST_BASE/git-repository"
 
-# Simulate installation on wize-flow-install
-# TODO: We could use the same installation script with an optional parameter for custom installation
-cp -f "$BATS_TEST_DIRNAME"/../src/common/* "$BATS_TMPDIR"/"$BATS_TEST_NAME"/wize-flow-install
-cp -f "$BATS_TEST_DIRNAME"/../src/"$WIZE_FLOW_IMPLEMENTATION"/* "$BATS_TMPDIR"/"$BATS_TEST_NAME"/wize-flow-install
-PATH="$BATS_TMPDIR"/"$BATS_TEST_NAME"/wize-flow-install:"$PATH"
+rm -fr "$WIZE_FLOW_TEST_BASE"
+mkdir -p "$WIZE_FLOW_TEST_INSTALL"
+mkdir -p "$WIZE_FLOW_TEST_GIT_REPO"
+
+if [[ "$2" != "skip_install" ]]; then
+    "$BATS_TEST_DIRNAME"/../setup.sh install \
+        "$WIZE_FLOW_IMPLEMENTATION" \
+        "$WIZE_FLOW_TEST_INSTALL" \
+        --ignore-dependencies
+
+    PATH="$WIZE_FLOW_TEST_INSTALL/wize-flow/bin:$PATH"
+    WIZE_FLOW_DIR="$WIZE_FLOW_TEST_INSTALL/wize-flow"
+fi
 
 # Change directory to where the tests are going to run
-cd "$BATS_TMPDIR"/"$BATS_TEST_NAME"/git-repository
+cd "$WIZE_FLOW_TEST_GIT_REPO"

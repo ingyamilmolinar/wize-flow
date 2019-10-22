@@ -13,7 +13,7 @@ jobs:
                 command: apt-get update && apt-get -y install sudo
             - run:
                 name: Create circleci user to avoid Dont run this as root! problem
-                command: "adduser --disabled-password --ingroup sudo --gecos \"\" circleci && echo \"circleci ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers"
+                command: "adduser --disabled-password --ingroup sudo --gecos \"\" circleci && sed -i '/^Defaults.*secure_path.*/a Defaults verifypw = any' /etc/sudoers && echo \"circleci ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers"
             - run:
                 name: Change project location to /home/circleci/project
                 command: mv /root/project /home/circleci && mv /root/.ssh /home/circleci
@@ -34,7 +34,7 @@ jobs:
                 command: su - circleci -c "( ls project/*.sh | sed 's:\*::'; find project/src/bash project/src/common -type f ) | xargs shellcheck --external-sources --shell=bash"
             - run:
                 name: Install wize-flow and verify
-                command: su - circleci -c "./project/wize-flow-install.sh bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"
+                command: su - circleci -c "MANPATH= INFOPATH= ./project/setup.sh install bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"
             - run:
                 name: Install test dependencies
                 command: su - circleci -c "brew install gcc && brew install bats"

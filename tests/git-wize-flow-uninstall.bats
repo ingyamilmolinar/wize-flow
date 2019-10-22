@@ -1,22 +1,77 @@
 #!/usr/bin/env bats
 
 setup() {
-    skip
     [[ "$INTEGRATION_TESTS" != "true" ]] && load common/mocks
-    load common/setup
+    load common/setup skip_install
 }
 
 teardown() {
-    load common/teardown
+    load common/teardown skip_uninstall
 }
 
-@test "Running uninstall script with wize-flow-installed should finish succesfully" {
-    run wize-flow-uninstall.sh
+@test "Running uninstall script with wize-flow installed should finish succesfully" {
+
+    "$BATS_TEST_DIRNAME"/../setup.sh install \
+        "$WIZE_FLOW_IMPLEMENTATION" \
+        "$WIZE_FLOW_TEST_INSTALL" \
+        --ignore-dependencies
+
+    run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
+        "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
+        --ignore-dependencies
+
     [ "$status" == "0" ]
     [[ "$output" == *"Successfully uninstalled wize-flow"* ]]
-    #TODO: Verify git-flow-avh and hub dependencies
-    #TODO: Verify /usr/local/opt/wize-flow does not exist
-    #TODO: Verify git-wize-flow is deleted from /usr/local/bin
+    [[ ! -f "$WIZE_FLOW_TEST_INSTALL/wize-flow/git-wize-flow" ]]
+    [[ ! -d "$WIZE_FLOW_TEST_INSTALL/wize-flow" ]]
 }
 
-#TODO: @test "Running uninstall script with wize-flow already uninstalled should throw error"
+@test "Running uninstall script without --ignore-dependencies should run brew or apt-get" {
+
+    brew() {
+        touch DEPENDENCIES_INSTALLED
+        return 0
+    }
+    apt-get() {
+        touch DEPENDENCIES_INSTALLED
+        return 0
+    }
+    export -f brew apt-get 
+
+    "$BATS_TEST_DIRNAME"/../setup.sh install \
+        "$WIZE_FLOW_IMPLEMENTATION" \
+        "$WIZE_FLOW_TEST_INSTALL" \
+        --ignore-dependencies
+
+    run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
+        "$WIZE_FLOW_TEST_INSTALL/wize-flow"
+
+    [ "$status" == "0" ]
+    [[ -f DEPENDENCIES_INSTALLED ]]
+
+}
+
+@test "Running uninstall script with wize-flow already uninstalled should throw error" {
+    
+    run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
+        "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
+        --ignore-dependencies
+
+    [ "$status" != "0" ]
+    [[ "$output" == *"$WIZE_FLOW_TEST_INSTALL/wize-flow is not a directory"* ]]
+
+}
+
+@test "Running uninstall script with --force and wize-flow already uninstalled should succeed" {
+    
+    mkdir "$WIZE_FLOW_TEST_INSTALL/wize-flow"
+
+    run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
+        "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
+        --ignore-dependencies \
+        --force
+
+    [ "$status" == "0" ]
+    [[ "$output" == *"Successfully uninstalled wize-flow"* ]]
+
+}

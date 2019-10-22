@@ -17,13 +17,12 @@ This project intention is to build upon what `git-flow-avh` already provides in 
 
 ## Setup
 1. Clone this repo
-2. Run the init script `<wize-flow-repo-path>/wize-flow-install.sh <bash|joker>`
-2. Setup your repository by running: `git wize-flow init <your-repo-path> <your-repo-url>`
-3. Enjoy!
+2. Run the installation script `<wize-flow-repo-path>/setup.sh install <bash|joker>`
+3. Setup your repository by running: `git wize-flow init <your-repo-path> <your-repo-url>`
 
 ## Uninstall
 1. To de-initialize the repository run `git wize-flow remove <your-repo-path>`
-2. To unsinstall wize-flow completely run `<wize-flow-repo-path>/wize-flow-uninstall.sh` 
+2. To unsinstall wize-flow completely run `<wize-flow-repo-path>/setup.sh uninstall` 
 
 ## Usage
 For `git-flow-avh` usage refer to the [cheatsheet](https://danielkummer.github.io/git-flow-cheatsheet/). `git-flow-avh` capabilities for `start`, `publish`, `pull` [discouraged](https://github.com/petervanderdoes/gitflow-avh/issues/128) and `track` commands are untouched. The `finish` command was changed so that now it expects a `merged` PR according to Wizeline practices to continue the back-merge, tagging and cleanup process.
@@ -33,7 +32,7 @@ For an opinionated guide on how to achieve the different types of workflows usin
 ## Development
 ### Static analysis (for BASH only)
 - Install [shellcheck](https://github.com/koalaman/shellcheck): `brew install shellcheck`
-- Run shellcheck on bash sources: `find src/bash -type f | xargs shellcheck --external-sources --shell=bash`
+- Run shellcheck on bash sources: `( ls *.sh | sed 's:\*::'; find src/bash src/common -type f ) | xargs shellcheck --external-sources --shell=bash`
 
 ### Testing
 - Install [bats](https://github.com/bats-core/bats-core/): `brew install bats` 
@@ -42,6 +41,7 @@ For an opinionated guide on how to achieve the different types of workflows usin
 - For unit tests run `./run-test.sh <bash|joker>` (Only bash support unit tests for now)
 - For integration tests run `INTEGRATION_TESTS=true ./run-test.sh <bash|joker>` (Internet connection needed)
 - To run an individual test from ./tests/ directory run `./run-test.sh <bash|joker> <test-filename>`
+- NOTE: Always use the `run-test.sh` driver. Do not attempt to run bats directly on the .bats files.
 
 ### [WIP] Code Coverage (for BASH only)
 - Install ruby: `brew install ruby`
