@@ -37,7 +37,7 @@ jobs:
                 command: su - circleci -c "MANPATH= INFOPATH= ./project/setup.sh install bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"
             - run:
                 name: Install test dependencies
-                command: su - circleci -c "brew install gcc && brew install bats"
+                command: su - circleci -c "sudo apt-get install -y bats"
             - run:
                 name: Set up git username and email
                 command: su - circleci -c "git config --add --global user.name wize-flow-test-bot && git config --add --global user.email wize.flow.test.bot@gmail.com"

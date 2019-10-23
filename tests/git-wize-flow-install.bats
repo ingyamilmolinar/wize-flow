@@ -9,7 +9,6 @@ teardown() {
     load common/teardown skip_uninstall 
 }
 
-
 @test "Running install script without implementation should fail" {
 
     run "$BATS_TEST_DIRNAME"/../setup.sh install \
@@ -43,15 +42,24 @@ teardown() {
 
 @test "Running install script without --ignore-dependencies should run brew or apt-get" {
     
-    brew() {
-        touch DEPENDENCIES_INSTALLED
-        return 0
+    brew() { [[ "$1" == "install" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    apt-get() { [[ "$1" == "install" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    yum() { [[ "$1" == "install" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    sudo() {
+        if [[ ( "$1" == "brew" || "$1" == "apt-get" || "$1" == "yum" ) && ( "$2" == "install" ) ]]; then
+            touch DEPENDENCIES_INSTALLED
+            return 0
+        fi
+        "$(which sudo)" "$@"
+        return $?
     }
-    apt-get() {
-        touch DEPENDENCIES_INSTALLED
-        return 0
+    command() {
+        if [[ "$@" == *" apt-get"* || "$@" == *" yum"* || "$@" == *" brew"* ]]; then
+            return 0;
+        fi
+        return 1;
     }
-    export -f brew apt-get
+    export -f brew apt-get yum sudo command
     
     run "$BATS_TEST_DIRNAME"/../setup.sh install \
         "$WIZE_FLOW_IMPLEMENTATION" \

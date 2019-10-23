@@ -7,63 +7,80 @@ function usage() {
 
 macos_install() {
 
-    local -r implementation="$1"
-    if [ ! "$(command -v brew)" ]; then
+    if ! command -v brew >/dev/null; then
         echo "Installing homebrew..."
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null
     fi
 
-    echo "Updating brew and installing dependencies..."
-    brew update &>/dev/null
-    brew install git-flow-avh &>/dev/null
+    if ! command -v git-flow >/dev/null || ! command -v hub >/dev/null; then 
+        echo "Updating brew and installing dependencies..."
+        brew update &>/dev/null
+    fi
 
-    case "$implementation" in
-        bash)
-            brew install hub &>/dev/null
-            ;;
-        joker)
-            brew install candid82/brew/joker &>/dev/null
-            ;;
-    esac
+    if ! command -v git-flow >/dev/null; then 
+        brew install git-flow-avh &>/dev/null
+    fi
+
+    if ! command -v hub >/dev/null; then
+        brew install hub &>/dev/null
+    fi
 
 }
 
 linux_install() {
 
-    echo "Installing linuxbrew dependencies..."
-    if [[ $(command -v apt-get) ]]; then
-        sudo apt-get update && \
-        sudo apt-get install -y build-essential curl file git
+    local -r sudo_command="$1"
+    local package_manager="apt-get"
+    local update_command="update"
+
+    if ! command -v apt-get >/dev/null; then
+        if command -v yum >/dev/null; then
+            package_manager="yum"
+            update_command="check-update"
+        else
+            echo "Could not find a supported package manager" 1>&2
+            echo "Install apt-get or yum and retry" 1>&2
+            exit 1
+        fi
     fi
 
-    if [[ $(command -v yum) ]]; then
-        sudo yum update && \
-        sudo yum groupinstall 'Development Tools' && \
-        sudo yum install -y curl file git libxcrypt-compat
+    if ! command -v git >/dev/null \
+        || ! command -v git-flow >/dev/null \
+        || ! command -v python >/dev/null \
+        || ! command -v hub >/dev/null; then
+        echo "Updating $package_manager and installing dependencies..."
+        $sudo_command $package_manager $update_command -y &>/dev/null
     fi
 
-    if [ ! "$(command -v brew)" ]; then
-        echo "Installing linuxbrew..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)" </dev/null
-        test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
-        test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
-        echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+    if ! command -v git >/dev/null; then
+        $sudo_command $package_manager install -y git &>/dev/null
     fi
 
-    echo "Updating brew and installing dependencies..."
-    brew update
-    brew install git-flow-avh
+    if ! command -v git-flow >/dev/null; then
+        if ! command -v wget >/dev/null; then
+            $sudo_command $package_manager install -y wget &>/dev/null
+        fi
+        wget -q \
+            https://raw.githubusercontent.com/petervanderdoes/gitflow-avh/develop/contrib/gitflow-installer.sh \
+            &>/dev/null
+        $sudo_command bash gitflow-installer.sh install stable &>/dev/null
+        $sudo_command rm -fr gitflow &>/dev/null
+        rm -f ./gitflow-installer.sh &>/dev/null
+    fi
 
-    case "$implementation" in
-        bash)
-            brew install python@2
-            brew install hub
-            ;;
-        joker)
-            brew install candid82/brew/joker
-            ;;
-    esac
+    if ! command -v python >/dev/null; then
+        $sudo_command $package_manager install -y python2.7 &>/dev/null
+        $sudo_command cp /usr/bin/python2.7 /usr/bin/python &>/dev/null
+    fi
+
+    if ! command -v hub >/dev/null; then
+        $sudo_command $package_manager install -y wget tar &>/dev/null
+        wget https://github.com/github/hub/releases/download/v2.12.8/hub-linux-amd64-2.12.8.tgz &>/dev/null
+        tar xvfz ./hub-linux-amd64-2.12.8.tgz -C /tmp &>/dev/null
+        $sudo_command mv /tmp/hub-linux-amd64-2.12.8/bin/hub /usr/local/bin &>/dev/null
+        chmod +x /usr/local/bin/hub &>/dev/null
+        rm -fr /tmp/hub-linux-amd64-2.12.8 &>/dev/null
+    fi
 
 }
 
@@ -120,7 +137,7 @@ install() {
 
     local ignore_deps=false
     if [[ "$*" == *"--ignore-dependencies"* ]]; then
-        if ! git flow 2>&1 | grep -q usage; then
+        if ! command -v git-flow; then
             echo "You cannot use --ignore-dependencies if you don't already have them installed" 1>&2
             exit 1
         fi
@@ -136,18 +153,20 @@ install() {
     local -r is_darwin_status=$(uname -a | grep -q 'Darwin'; echo $?)
     local -r is_linux_status=$(uname -a | grep -q 'Linux'; echo $?)
     
+    sudo_command=""
     if [[ ( "$ignore_deps" == "false" && "$is_linux_status" -eq 0 ) \
          || ! -w "$base_installation_dir" \
          || ( "$custom" == "false" && ! -w "$binary_installation_dir" ) ]]; then
         check_sudo
+        sudo_command="sudo"
     fi
 
     if [[ "$ignore_deps" == "false" ]]; then
 
         if [[ "$is_darwin_status" -eq 0 ]]; then
-            macos_install "$implementation"
+            macos_install 
         elif [[ "$is_linux_status" -eq 0 ]]; then
-            linux_install "$implementation"
+            linux_install "$sudo_command"
         else
             echo "Only Linux based distros are supported" 1>&2
             exit 1
@@ -185,9 +204,51 @@ install() {
     fi
 }
 
+linux_uninstall() {
+
+    local -r sudo_command="$1"
+    local package_manager="apt-get"
+
+    if ! command -v apt-get >/dev/null; then
+        if command -v yum >/dev/null; then
+            package_manager="yum"
+        else
+            echo "Could not find a supported package manager" 1>&2
+            echo "Install apt-get or yum and retry" 1>&2
+            exit 1
+        fi
+    fi
+    
+    wget -q \
+        https://raw.githubusercontent.com/petervanderdoes/gitflow-avh/develop/contrib/gitflow-installer.sh \
+        &>/dev/null
+    $sudo_command bash gitflow-installer.sh uninstall stable &>/dev/null
+    rm -f ./gitflow-installer.sh &>/dev/null
+
+    $sudo_command $package_manager remove python2.7 &>/dev/null
+    $sudo_command rm -f /usr/bin/python /usr/bin/python2.7 &>/dev/null
+
+    $sudo_command rm -f /usr/local/bin/hub &>/dev/null
+
+}
+
+macos_uninstall() {
+
+    brew uninstall git-flow-avh &>/dev/null
+    brew uninstall hub &>/dev/null
+
+}
+
 uninstall() {
 
-    if [[ ! ( "$#" -ge "0" && "$#" -le "3" ) ]]; then
+    if [[ ! ( "$#" -ge "1" && "$#" -le "4" ) ]]; then
+        usage
+        exit 1
+    fi
+
+    local -r implementation="$1"
+    if [[ "$implementation" != "bash" && "$implementation" != "joker" ]]; then
+        echo "Unsupported implementation $implementation" 1>&2
         usage
         exit 1
     fi
@@ -196,16 +257,16 @@ uninstall() {
     local installation_dir="/usr/local/opt/wize-flow"
     local binary_installation_dir="/usr/local/bin"
 
-    if [[ "${1-undefined}" != "undefined" && "$1" != "--force" && "$1" != "--ignore-dependencies" ]]; then
+    if [[ "${2-undefined}" != "undefined" && "$2" != "--force" && "$2" != "--ignore-dependencies" ]]; then
 
-        if [[ ! -d "$1" ]]; then
-            echo "$1 is not a directory" 1>&2
+        if [[ ! -d "$2" ]]; then
+            echo "$2 is not a directory" 1>&2
             usage
             exit 1
         fi
 
         custom=true
-        installation_dir="$(cd "$1"; pwd)"
+        installation_dir="$(cd "$2"; pwd)"
         if [[ "$installation_dir" == "/usr/local/opt/wize-flow" ]]; then
             custom=false
         else
@@ -246,14 +307,26 @@ uninstall() {
         sudo_command="sudo"
     fi
     
+    local -r is_darwin_status=$(uname -a | grep -q 'Darwin'; echo $?)
+    local -r is_linux_status=$(uname -a | grep -q 'Linux'; echo $?)
+    
     if [[ "$ignore_deps" == "false" ]]; then
+
         echo "Uninstalling dependencies..."
-        brew uninstall git-flow-avh &>/dev/null
-        brew uninstall hub &>/dev/null
-        brew uninstall candid82/brew/joker &>/dev/null
+        if [[ "$is_darwin_status" -eq 0 ]]; then
+            macos_uninstall 
+        elif [[ "$is_linux_status" -eq 0 ]]; then
+            linux_uninstall "$sudo_command"
+        else
+            echo "Only Linux based distros are supported" 1>&2
+            exit 1
+        fi
+
     fi
 
-    if [[ "$forced" == "false" && ( ! -f "$installation_dir/wize-flow" || ! -f "$binary_installation_dir/git-wize-flow" ) ]]; then
+    if [[ "$forced" == "false" && \
+        ( ! -f "$installation_dir/wize-flow" \
+        || ! -f "$binary_installation_dir/git-wize-flow" ) ]]; then
         echo "$installation_dir directory does not contain a wize-flow installation" 1>&2
         exit 1
     fi

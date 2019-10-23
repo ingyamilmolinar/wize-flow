@@ -1,7 +1,7 @@
 #!/usr/local/env bash
 
 # Mock all git commands that will interact with the network
-function git() {
+git() {
     [[ "$1" == "ls-remote" && "$2" == *"git@github.com"* ]] && return 0
     [[ "$1" == "remote" && "$2" == "add" ]] && return 0
     [[ "$1" == "fetch" ]] && return 0
@@ -11,14 +11,12 @@ function git() {
     return "$?"
 }
 
-# Mock all hub commands
-function hub() {
-    return 0
-}
+hub() { return 0; }
 
-# Mock all brew commands
-function brew() {
-    return 0
-}
+brew() { return 0; }
 
-export -f git hub brew
+curl() { return 0; }
+
+wget() { return 0; }
+
+export -f git hub brew curl wget

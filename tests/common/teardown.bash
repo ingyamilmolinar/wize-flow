@@ -8,6 +8,7 @@ fi
 
 if [[ "$2" != "skip_uninstall" ]]; then
     "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
+        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
         --ignore-dependencies
 fi
