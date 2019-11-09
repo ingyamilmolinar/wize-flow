@@ -69,7 +69,7 @@ last_commit_hash_from_pr() {
     local -r github_repository="$2"
     local -r pr_number="$3"
     hub api "/repos/$github_username/$github_repository/pulls/$pr_number/commits" \
-         | python -c 'import json,sys; json_object=json.load(sys.stdin); print json_object[-1]["sha"];'
+        | jq -r '.[-1].sha'
 }
 
 merged_status_from_pr() {
@@ -77,8 +77,8 @@ merged_status_from_pr() {
     local -r github_repository="$2"
     local -r pr_number="$3"
     hub api "/repos/$github_username/$github_repository/pulls/$pr_number" \
-         | python -m json.tool \
-         | grep 'merged'
+        | jq -r '.merged' \
+        | grep 'true'
 }
 
 validate_inputs() {

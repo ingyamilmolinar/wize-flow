@@ -10,10 +10,10 @@ This project intention is to build upon what `git-flow-avh` already provides in 
 3. Provide simplicity of usage by providing sane defaults for `git-flow-avh` that work for the vast majority of the cases.
 
 ## Dependencies
-- git (already installed on MacOS)
-- python 2.7 (already installed on MacOS)
-- git-flow-avh
-- hub
+- [git](https://github.com/git/git)
+- [jq](https://github.com/stedolan/jq)
+- [git-flow-avh](https://github.com/petervanderdoes/gitflow-avh)
+- [hub](https://github.com/github/hub)
 
 ## Setup
 1. Clone this repo
@@ -36,7 +36,6 @@ For an opinionated guide on how to achieve the different types of workflows usin
 
 ### Testing
 - Install [bats](https://github.com/bats-core/bats-core/): `brew install bats` 
-- Install [hub](https://github.com/github/hub): `brew install hub`
 - Configure hub by either setting user/password: `export GITHUB_USER=<your-github-username> && export GITHUB_PASSWORD=<your-github-password>` or by setting an access token: `export GITHUB_TOKEN=<your-github-access-token>`
 - For unit tests run `./run-test.sh <bash|joker>` (Only bash support unit tests for now)
 - For integration tests run `INTEGRATION_TESTS=true ./run-test.sh <bash|joker>` (Internet connection needed)

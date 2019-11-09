@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2001,SC2032,SC2033
 
+#TOFIX: Remove joker!!
 function usage() {
     echo "setup.sh <install|uninstall> <bash|joker> [<custom-directory>] [--force] [--ignore-dependencies]" 1>&2
 }
@@ -19,6 +20,10 @@ macos_install() {
 
     if ! command -v git-flow >/dev/null; then 
         brew install git-flow-avh &>/dev/null
+    fi
+
+    if ! command -v jq >/dev/null; then
+        brew install jq
     fi
 
     if ! command -v hub >/dev/null; then
@@ -46,7 +51,7 @@ linux_install() {
 
     if ! command -v git >/dev/null \
         || ! command -v git-flow >/dev/null \
-        || ! command -v python >/dev/null \
+        || ! command -v jq >/dev/null \
         || ! command -v hub >/dev/null; then
         echo "Updating $package_manager and installing dependencies..."
         $sudo_command $package_manager $update_command -y &>/dev/null
@@ -68,9 +73,8 @@ linux_install() {
         rm -f ./gitflow-installer.sh &>/dev/null
     fi
 
-    if ! command -v python >/dev/null; then
-        $sudo_command $package_manager install -y python2.7 &>/dev/null
-        $sudo_command cp /usr/bin/python2.7 /usr/bin/python &>/dev/null
+    if ! command -v jq >/dev/null; then
+        $sudo_command $package_manager install -y jq &>/dev/null
     fi
 
     if ! command -v hub >/dev/null; then
@@ -137,7 +141,7 @@ install() {
 
     local ignore_deps=false
     if [[ "$*" == *"--ignore-dependencies"* ]]; then
-        if ! command -v git-flow; then
+        if ! command -v git-flow &>/dev/null; then
             echo "You cannot use --ignore-dependencies if you don't already have them installed" 1>&2
             exit 1
         fi
@@ -224,9 +228,8 @@ linux_uninstall() {
         &>/dev/null
     $sudo_command bash gitflow-installer.sh uninstall stable &>/dev/null
     rm -f ./gitflow-installer.sh &>/dev/null
-
-    $sudo_command $package_manager remove python2.7 &>/dev/null
-    $sudo_command rm -f /usr/bin/python /usr/bin/python2.7 &>/dev/null
+    
+    $sudo_command $package_manager remove -y jq &>/dev/null
 
     $sudo_command rm -f /usr/local/bin/hub &>/dev/null
 
@@ -235,6 +238,7 @@ linux_uninstall() {
 macos_uninstall() {
 
     brew uninstall git-flow-avh &>/dev/null
+    brew uninstall jq &>/dev/null
     brew uninstall hub &>/dev/null
 
 }

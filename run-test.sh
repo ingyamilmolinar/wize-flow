@@ -55,23 +55,27 @@ verify_dependencies() {
 
     local -r integration_tests="$1"
     if [[ "$integration_tests" == "true" ]]; then
-        if ! hub 2>&1 | grep -q 'usage'; then
+        if ! command -v hub &>/dev/null; then
             echo "'hub' is not installed and is required to run integration tests" 1>&2
+            exit 1
+        fi
+        if ! command -v jq &>/dev/null; then
+            echo "'jq' is not installed and is required to run integration tests" 1>&2
             exit 1
         fi
     fi
 
-    if ! git 2>&1 | grep -q 'usage'; then
+    if ! command -v git &>/dev/null; then
         echo "'git' is not installed and is required to run integration tests" 1>&2
         exit 1
     fi
 
-    if git flow 2>&1 | grep -q 'is not a git command'; then
+    if ! command -v git-flow &>/dev/null; then
         echo "'git-flow-avh' is not installed and is required to run integration tests" 1>&2
         exit 1
     fi
 
-    if ! bats 2>&1 | grep -q 'Bats'; then
+    if ! command -v bats &>/dev/null; then
         echo "'bats' is not installed and is required to run the tests" 1>&2
         exit 1
     fi

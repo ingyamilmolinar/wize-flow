@@ -20,8 +20,8 @@ if [[ "$2" != "skip_install" ]]; then
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
-    PATH="$WIZE_FLOW_TEST_INSTALL/wize-flow/bin:$PATH"
-    WIZE_FLOW_DIR="$WIZE_FLOW_TEST_INSTALL/wize-flow"
+    export PATH="$WIZE_FLOW_TEST_INSTALL/wize-flow:$PATH"
+    export WIZE_FLOW_DIR="$WIZE_FLOW_TEST_INSTALL/wize-flow"
 fi
 
 # Change directory to where the tests are going to run
