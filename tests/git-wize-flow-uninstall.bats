@@ -12,12 +12,10 @@ teardown() {
 @test "Running uninstall script with wize-flow installed should finish succesfully" {
 
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
     run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
         --ignore-dependencies
 
@@ -36,12 +34,10 @@ teardown() {
     export -f brew apt-get yum command
 
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
     run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL/wize-flow"
 
     [ "$status" == "0" ]
@@ -52,7 +48,6 @@ teardown() {
 @test "Running uninstall script with wize-flow already uninstalled should throw error" {
     
     run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
         --ignore-dependencies
 
@@ -66,7 +61,6 @@ teardown() {
     mkdir "$WIZE_FLOW_TEST_INSTALL/wize-flow"
 
     run "$BATS_TEST_DIRNAME"/../setup.sh uninstall \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL/wize-flow" \
         --ignore-dependencies \
         --force

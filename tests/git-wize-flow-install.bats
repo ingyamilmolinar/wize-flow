@@ -9,20 +9,9 @@ teardown() {
     load common/teardown skip_uninstall 
 }
 
-@test "Running install script without implementation should fail" {
-
-    run "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_TEST_INSTALL" \
-        --ignore-dependencies
-
-    [ "$status" != "0" ]
-    [[ "$output" == *"Unsupported implementation"* ]]
-}
-
 @test "Running install script with wize-flow uninstalled should finish succesfully" {
 
     run "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
     
@@ -62,7 +51,6 @@ teardown() {
     export -f brew apt-get yum sudo command
     
     run "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL"
 
     [ "$status" == "0" ]
@@ -73,12 +61,10 @@ teardown() {
 @test "Running install script with wize-flow already installed should throw error" {
     
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
     run $BATS_TEST_DIRNAME/../setup.sh install \
-        $WIZE_FLOW_IMPLEMENTATION \
         $WIZE_FLOW_TEST_INSTALL \
         --ignore-dependencies
 
@@ -90,12 +76,10 @@ teardown() {
 @test "Running install script with --force and wize-flow already installed should succeed" {
     
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
     run $BATS_TEST_DIRNAME/../setup.sh install \
-        $WIZE_FLOW_IMPLEMENTATION \
         $WIZE_FLOW_TEST_INSTALL \
         --ignore-dependencies \
         --force

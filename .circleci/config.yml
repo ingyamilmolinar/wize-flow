@@ -31,10 +31,10 @@ jobs:
                 command: apt-get -y install shellcheck
             - run:
                 name: Check bash scripts
-                command: su - circleci -c "( ls project/*.sh | sed 's:\*::'; find project/src/bash project/src/common -type f ) | xargs shellcheck --external-sources --shell=bash"
+                command: su - circleci -c "( ls project/*.sh | sed 's:\*::'; find project/src -type f ) | xargs shellcheck --external-sources --shell=bash"
             - run:
                 name: Install wize-flow and verify
-                command: su - circleci -c "MANPATH= INFOPATH= ./project/setup.sh install bash && git wize-flow version | grep $(cat /home/circleci/project/src/bash/version)"
+                command: su - circleci -c "MANPATH= INFOPATH= ./project/setup.sh install && git wize-flow version | grep $(cat /home/circleci/project/src/version)"
             - run:
                 name: Install test dependencies
                 command: su - circleci -c "sudo apt-get install -y bats"
@@ -43,4 +43,4 @@ jobs:
                 command: su - circleci -c "git config --add --global user.name wize-flow-test-bot && git config --add --global user.email wize.flow.test.bot@gmail.com"
             - run:
                 name: Run integration tests
-                command: su - circleci -c "GITHUB_TOKEN=01c45c695426fadcbdff0e9057454a6ac8f0bb76 TERM=dumb INTEGRATION_TESTS=true ./project/run-test.sh bash"
+                command: su - circleci -c "GITHUB_TOKEN=01c45c695426fadcbdff0e9057454a6ac8f0bb76 TERM=dumb INTEGRATION_TESTS=true ./project/run-test.sh"

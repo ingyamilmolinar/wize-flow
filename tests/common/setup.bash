@@ -16,7 +16,6 @@ mkdir -p "$WIZE_FLOW_TEST_GIT_REPO"
 
 if [[ "$2" != "skip_install" ]]; then
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 

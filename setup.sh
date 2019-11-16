@@ -1,32 +1,31 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2001,SC2032,SC2033
 
-#TOFIX: Remove joker!!
 function usage() {
-    echo "setup.sh <install|uninstall> <bash|joker> [<custom-directory>] [--force] [--ignore-dependencies]" 1>&2
+    echo "setup.sh <install|uninstall> [<custom-directory>] [--force] [--ignore-dependencies]" 1>&2
 }
 
 macos_install() {
 
-    if ! command -v brew >/dev/null; then
+    if ! command -v brew &>/dev/null; then
         echo "Installing homebrew..."
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null
     fi
 
-    if ! command -v git-flow >/dev/null || ! command -v hub >/dev/null; then 
+    if ! command -v git-flow &>/dev/null || ! command -v hub &>/dev/null; then 
         echo "Updating brew and installing dependencies..."
         brew update &>/dev/null
     fi
 
-    if ! command -v git-flow >/dev/null; then 
+    if ! command -v git-flow &>/dev/null; then 
         brew install git-flow-avh &>/dev/null
     fi
 
-    if ! command -v jq >/dev/null; then
+    if ! command -v jq &>/dev/null; then
         brew install jq
     fi
 
-    if ! command -v hub >/dev/null; then
+    if ! command -v hub &>/dev/null; then
         brew install hub &>/dev/null
     fi
 
@@ -38,8 +37,8 @@ linux_install() {
     local package_manager="apt-get"
     local update_command="update"
 
-    if ! command -v apt-get >/dev/null; then
-        if command -v yum >/dev/null; then
+    if ! command -v apt-get &>/dev/null; then
+        if command -v yum &>/dev/null; then
             package_manager="yum"
             update_command="check-update"
         else
@@ -49,20 +48,20 @@ linux_install() {
         fi
     fi
 
-    if ! command -v git >/dev/null \
-        || ! command -v git-flow >/dev/null \
-        || ! command -v jq >/dev/null \
-        || ! command -v hub >/dev/null; then
+    if ! command -v git &>/dev/null \
+        || ! command -v git-flow &>/dev/null \
+        || ! command -v jq &>/dev/null \
+        || ! command -v hub &>/dev/null; then
         echo "Updating $package_manager and installing dependencies..."
         $sudo_command $package_manager $update_command -y &>/dev/null
     fi
 
-    if ! command -v git >/dev/null; then
+    if ! command -v git &>/dev/null; then
         $sudo_command $package_manager install -y git &>/dev/null
     fi
 
-    if ! command -v git-flow >/dev/null; then
-        if ! command -v wget >/dev/null; then
+    if ! command -v git-flow &>/dev/null; then
+        if ! command -v wget &>/dev/null; then
             $sudo_command $package_manager install -y wget &>/dev/null
         fi
         wget -q \
@@ -73,11 +72,11 @@ linux_install() {
         rm -f ./gitflow-installer.sh &>/dev/null
     fi
 
-    if ! command -v jq >/dev/null; then
+    if ! command -v jq &>/dev/null; then
         $sudo_command $package_manager install -y jq &>/dev/null
     fi
 
-    if ! command -v hub >/dev/null; then
+    if ! command -v hub &>/dev/null; then
         $sudo_command $package_manager install -y wget tar &>/dev/null
         wget https://github.com/github/hub/releases/download/v2.12.8/hub-linux-amd64-2.12.8.tgz &>/dev/null
         tar xvfz ./hub-linux-amd64-2.12.8.tgz -C /tmp &>/dev/null
@@ -98,32 +97,28 @@ check_sudo() {
 
 install() {
 
-    if [[ ! ( "$#" -ge "1" && "$#" -le "4" ) ]]; then
+    if [[ ! ( "$#" -ge "0" && "$#" -le "3" ) ]]; then
         usage
         exit 1
     fi
 
-    local -r implementation="$1"
-    if [[ "$implementation" != "bash" && "$implementation" != "joker" ]]; then
-        echo "Unsupported implementation $implementation" 1>&2
-        usage
-        exit 1
-    fi
-
+    local -r input_directory="${1-undefined}"
     local custom=false
     local installation_dir="/usr/local/opt/wize-flow"
     local binary_installation_dir="/usr/local/bin"
 
-    if [[ "${2-undefined}" != "undefined" && "$2" != "--force" && "$2" != "--ignore-dependencies" ]]; then
+    if [[ "${input_directory-undefined}" != "undefined" \
+        && "$input_directory" != "--force" \
+        && "$input_directory" != "--ignore-dependencies" ]]; then
 
-        if [[ ! -d "$2" ]]; then
-            echo "$2 is not a directory" 1>&2
+        if [[ ! -d "$input_directory" ]]; then
+            echo "$input_directory is not a directory" 1>&2
             usage
             exit 1
         fi
 
         custom=true
-        installation_dir="$(cd "$2"; pwd)/wize-flow"
+        installation_dir="$(cd "$input_directory"; pwd)/wize-flow"
         binary_installation_dir="$installation_dir"
 
         if [[ "$installation_dir" == "/usr/local/opt/wize-flow" ]]; then
@@ -179,7 +174,7 @@ install() {
     fi
 
     echo "Installing wize-flow..."
-    readonly init_script_relative_path="$(dirname "$0")"/src/"$1"
+    readonly init_script_relative_path="$(dirname "$0")"/src
 
     sudo_command=""
     if [[ ! -w "$base_installation_dir" \
@@ -189,13 +184,12 @@ install() {
 
     $sudo_command mkdir -p "$installation_dir"
     $sudo_command mkdir -p "$binary_installation_dir"
-    $sudo_command cp -f "$init_script_relative_path"/../common/* "$installation_dir"
     $sudo_command cp -f "$init_script_relative_path"/* "$installation_dir"
     $sudo_command rm -f "$installation_dir"/git-wize-flow
 
     # This will extend git with 'git wize-flow'
     # See: https://stackoverflow.com/questions/10978257/extending-git-functionality
-    $sudo_command cp -f "$init_script_relative_path"/../common/git-wize-flow "$binary_installation_dir" 
+    $sudo_command cp -f "$init_script_relative_path"/git-wize-flow "$binary_installation_dir" 
 
     echo
     echo "wize-flow was installed successfully on $installation_dir"
@@ -213,8 +207,8 @@ linux_uninstall() {
     local -r sudo_command="$1"
     local package_manager="apt-get"
 
-    if ! command -v apt-get >/dev/null; then
-        if command -v yum >/dev/null; then
+    if ! command -v apt-get &>/dev/null; then
+        if command -v yum &>/dev/null; then
             package_manager="yum"
         else
             echo "Could not find a supported package manager" 1>&2
@@ -245,32 +239,28 @@ macos_uninstall() {
 
 uninstall() {
 
-    if [[ ! ( "$#" -ge "1" && "$#" -le "4" ) ]]; then
+    if [[ ! ( "$#" -ge "0" && "$#" -le "3" ) ]]; then
         usage
         exit 1
     fi
 
-    local -r implementation="$1"
-    if [[ "$implementation" != "bash" && "$implementation" != "joker" ]]; then
-        echo "Unsupported implementation $implementation" 1>&2
-        usage
-        exit 1
-    fi
-
+    local -r input_directory="${1-undefined}"
     local custom=false
     local installation_dir="/usr/local/opt/wize-flow"
     local binary_installation_dir="/usr/local/bin"
 
-    if [[ "${2-undefined}" != "undefined" && "$2" != "--force" && "$2" != "--ignore-dependencies" ]]; then
+    if [[ "$input_directory" != "undefined" \
+        && "$input_directory" != "--force" \
+        && "$input_directory" != "--ignore-dependencies" ]]; then
 
-        if [[ ! -d "$2" ]]; then
-            echo "$2 is not a directory" 1>&2
+        if [[ ! -d "$input_directory" ]]; then
+            echo "$input_directory is not a directory" 1>&2
             usage
             exit 1
         fi
 
         custom=true
-        installation_dir="$(cd "$2"; pwd)"
+        installation_dir="$(cd "$input_directory"; pwd)"
         if [[ "$installation_dir" == "/usr/local/opt/wize-flow" ]]; then
             custom=false
         else
