@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2068
+# shellcheck disable=SC2068,SC2001
 
 main() {
 
@@ -12,42 +12,23 @@ main() {
     # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
     set +o pipefail
 
-    case "$1" in
-        bash)
-                # Default for bash is unit tests
-                INTEGRATION_TESTS="${INTEGRATION_TESTS-false}"
-                ;;
-        joker)
-                # We only support unit tests on BASH
-                INTEGRATION_TESTS="true"
-                ;;
-        *)
-                echo "Implementation required. Run with options <bash|joker>"
-                exit 1
-                ;;
-    esac
-
     i=0
     test_names=()
     for arg in "$@"; do
         # Hacky way to avoid an unbound error for an empty array.
         # See: https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u
-        if [[ "$i" -gt 0 ]]; then
-            test_names=("${test_names[@]+${test_names[@]}}" \
-                        "$(dirname "$0")/tests/$(echo "$arg" \
-                            | sed 's:tests::' \
-                            | sed 's:/::g' \
-                            | sed 's/.bats$//').bats")
-        fi 
+        local -r test_name="$(dirname "$0")/tests/$(echo "$arg" \
+                        | sed 's/.bats$//')"
+        test_names=("${test_names[@]+${test_names[@]}}" "$test_name.bats")
         ((i++))
     done 
 
-    [[ "${2-undefined}" == "undefined" ]] && test_names=("$(dirname "$0")/tests/*.bats")
+    [[ "${1-undefined}" == "undefined" ]] && test_names=("$(dirname "$0")/tests/*.bats")
 
-    verify_dependencies "$INTEGRATION_TESTS"
+    verify_dependencies "${INTEGRATION_TESTS-false}"
 
     verify_and_set_synchronization_flag
-    INTEGRATION_TESTS="$INTEGRATION_TESTS" WIZE_FLOW_IMPLEMENTATION="$1" bats ${test_names[@]}
+    INTEGRATION_TESTS="${INTEGRATION_TESTS-false}" bats ${test_names[@]}
     remove_synchronization_flag "$?"
 }
 
@@ -55,23 +36,27 @@ verify_dependencies() {
 
     local -r integration_tests="$1"
     if [[ "$integration_tests" == "true" ]]; then
-        if ! hub 2>&1 | grep -q 'usage'; then
+        if ! command -v hub &>/dev/null; then
             echo "'hub' is not installed and is required to run integration tests" 1>&2
+            exit 1
+        fi
+        if ! command -v jq &>/dev/null; then
+            echo "'jq' is not installed and is required to run integration tests" 1>&2
             exit 1
         fi
     fi
 
-    if ! git 2>&1 | grep -q 'usage'; then
+    if ! command -v git &>/dev/null; then
         echo "'git' is not installed and is required to run integration tests" 1>&2
         exit 1
     fi
 
-    if git flow 2>&1 | grep -q 'is not a git command'; then
+    if ! command -v git-flow &>/dev/null; then
         echo "'git-flow-avh' is not installed and is required to run integration tests" 1>&2
         exit 1
     fi
 
-    if ! bats 2>&1 | grep -q 'Bats'; then
+    if ! command -v bats &>/dev/null; then
         echo "'bats' is not installed and is required to run the tests" 1>&2
         exit 1
     fi
@@ -112,7 +97,7 @@ remove_current_remote_tag() {
 }
 
 verify_and_set_synchronization_flag() {
-    if [[ "$INTEGRATION_TESTS" == "true" ]]; then 
+    if [[ "${INTEGRATION_TESTS-false}" == "true" ]]; then 
         # We create a local file for local synchronization and a tag on wize-flow-test master to synchronize remote executions
         if [[ -f ~/.wize-flow.lock ]] || remote_test_is_running; then 
             if [[ -f ~/.wize-flow.lock ]]; then
@@ -166,7 +151,7 @@ verify_and_set_synchronization_flag() {
 
 remove_synchronization_flag() {
     [[ "${1-undefined}" != "undefined" ]] && trap '' INT TERM EXIT 
-    if [[ "$INTEGRATION_TESTS" == "true" && -f ~/.wize-flow.lock ]]; then
+    if [[ "${INTEGRATION_TESTS-false}" == "true" && -f ~/.wize-flow.lock ]]; then
         echo "Releasing synchronization lock..."
         # We remove the created tag on wize-flow-test master to allow for other integration test executions
         if [[ -d /tmp/wize-flow-test ]]; then

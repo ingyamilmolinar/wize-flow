@@ -12,7 +12,6 @@ teardown() {
 @test "Running uninstall script with wize-flow installed should finish succesfully" {
 
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
@@ -28,18 +27,13 @@ teardown() {
 
 @test "Running uninstall script without --ignore-dependencies should run brew or apt-get" {
 
-    brew() {
-        touch DEPENDENCIES_INSTALLED
-        return 0
-    }
-    apt-get() {
-        touch DEPENDENCIES_INSTALLED
-        return 0
-    }
-    export -f brew apt-get 
+    brew() { [[ "$1" == "uninstall" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    apt-get() { [[ "$1" == "remove" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    yum() { [[ "$1" == "remove" ]] && touch DEPENDENCIES_INSTALLED && return 0; }
+    command() { return 0; }
+    export -f brew apt-get yum command
 
     "$BATS_TEST_DIRNAME"/../setup.sh install \
-        "$WIZE_FLOW_IMPLEMENTATION" \
         "$WIZE_FLOW_TEST_INSTALL" \
         --ignore-dependencies
 
