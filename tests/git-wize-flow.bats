@@ -18,7 +18,11 @@ teardown() {
 @test "Running 'git wize-flow version' should return 'version' file contents" {
     run git wize-flow version
     [ "$status" == "0" ]
-    [[ "$output" == "0.0.0-pilot" ]]
+    [[ "$output" == "$(cat $WIZE_FLOW_TEST_INSTALL/wize-flow/version)" ]]
+
+    echo "9.9.9" > $WIZE_FLOW_TEST_INSTALL/wize-flow/version
+    run git wize-flow version
+    [[ "$output" == "9.9.9" ]]
 }
 
 @test "Running 'git wize-flow -h' should show usage and exit succesfully" {
