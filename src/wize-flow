@@ -7,8 +7,7 @@ usage() {
 }
 
 version() {
-    #TODO: This should be replaced by the src/<stack>/version file contents
-    echo "0.0.0-pilot"
+    cat "$(dirname "$0")/version"
 }
 
 print_hints_header() {
