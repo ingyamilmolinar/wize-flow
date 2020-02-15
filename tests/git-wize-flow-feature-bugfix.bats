@@ -4,7 +4,7 @@ setup() {
     # Unit testing support for feature|bugfix functionality is missing
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for feature|bugfix workflow"
     load common/setup
-    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL"
     load common/remote_cleanup
 }
 
@@ -28,14 +28,14 @@ teardown() {
         # Calling finish without publishing should fail 
         run git wize-flow "$workflow" finish "$branch_name"
         [ "$status" != "0" ]
-        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository wize-flow-test"* ]]
+        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository $TEST_REPOSITORY_NAME"* ]]
 
         git wize-flow publish
 
         # Calling finish with published branch but no PR should fail
         run git wize-flow "$workflow" finish "$branch_name"
         [ "$status" != "0" ]
-        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository wize-flow-test"* ]]
+        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository $TEST_REPOSITORY_NAME"* ]]
         
         # Create PR on github from $workflow/$branch_name to develop
         local pr_link=$(hub pull-request -m "Test PR created by $user_and_hostname" -b develop -h "$workflow/$branch_name")
@@ -44,7 +44,7 @@ teardown() {
         # Calling finish with open unmerged PR should fail
         run git wize-flow "$workflow" finish "$branch_name"
         [ "$status" != "0" ]
-        [[ "$output" == *"The PR $pr_num on repository wize-flow-test has not been merged"* ]]
+        [[ "$output" == *"The PR $pr_num on repository $TEST_REPOSITORY_NAME has not been merged"* ]]
 
         # This will merge the open PR
         git checkout develop && git merge "$workflow/$branch_name"
@@ -74,7 +74,7 @@ teardown() {
 
         run git wize-flow "$workflow" finish "$branch_name"
         [ "$status" != "0" ]
-        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository wize-flow-test"* ]]
+        [[ "$output" == *"No PR has been created from $workflow/$branch_name to develop on repository $TEST_REPOSITORY_NAME"* ]]
 
         load common/remote_cleanup
 

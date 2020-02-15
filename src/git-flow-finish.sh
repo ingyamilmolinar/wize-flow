@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2086
 
 usage() {
     echo "usage: $__script_name <feature|release|bugfix|hotfix> <branch-name> [tag-version]" 1>&2 
@@ -47,17 +48,17 @@ last_pr_from_to() {
 }
 
 github_username() {
-    grep -A 1 'remote \"origin\"' .git/config \
+    git config --get remote.origin.url \
           | grep -o ':.*/' \
           | sed 's/://g' \
           | sed 's:/::g'
 }
 
 github_repository() {
-    grep -A 1 'remote \"origin\"' .git/config \
-          | grep -o '/.*\.' \
+    git config --get remote.origin.url \
+          | grep -o '/.*' \
           | sed 's:/::g' \
-          | sed 's:\.::g'
+          | sed 's:\.git::g'
 }
 
 last_commit_hash_from_branch() {

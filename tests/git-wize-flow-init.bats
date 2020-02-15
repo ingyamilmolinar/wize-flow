@@ -22,7 +22,7 @@ teardown() {
 }
 
 @test "Running 'git wize-flow init' with an invalid path should throw error" {
-    run git wize-flow init /my/path/ git@github.com:wizeline/wize-flow-test.git 
+    run git wize-flow init /my/path/ "$TEST_REPOSITORY_URL" 
     [ "$status" != "0" ]
     [[ "$output" == *"directory does not exist"* ]]
 }
@@ -48,7 +48,7 @@ teardown() {
 
 @test "Running 'git wize-flow init' on a new directory with a valid path and repository url should execute succesfully" {
     
-    run git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git 
+    run git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL" 
     
     [ "$status" == "0" ]
     [[ "$output" == *"Successfully initialized wize-flow"* ]]

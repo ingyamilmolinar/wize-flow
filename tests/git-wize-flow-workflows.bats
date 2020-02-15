@@ -4,7 +4,7 @@ setup() {
     # Unit testing support for feature functionality is missing
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for workflow tests"
     load common/setup
-    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL"
     load common/remote_cleanup
 }
 
@@ -80,7 +80,7 @@ teardown() {
         git wize-flow "$workflow" start "$branch_name"
         run git wize-flow publish
         [ "$status" == "0" ]
-        [[ "$output" == *"To github.com:wizeline/wize-flow-test.git"* ]]
+        [[ "$output" == *"$TEST_REPOSITORY_NAME"* ]]
         [[ "$output" == *"$workflow/$branch_name -> $workflow/$branch_name"* ]]
         [[ "$output" == *"Next step: Open PR"* ]]
 

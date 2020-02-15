@@ -4,7 +4,7 @@ setup() {
     #TODO: Support unit tests
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for pre-push hook"
     load common/setup
-    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL"
 }
 
 teardown() {
