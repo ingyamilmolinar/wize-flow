@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2068,SC2001
+# shellcheck disable=SC2068,SC2001,SC1090,SC1091
 
 main() {
 
@@ -11,6 +11,8 @@ main() {
     set -o nounset
     # Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
     set +o pipefail
+
+    load_config
 
     i=0
     test_names=()
@@ -28,8 +30,18 @@ main() {
     verify_dependencies "${INTEGRATION_TESTS-false}"
 
     verify_and_set_synchronization_flag
-    INTEGRATION_TESTS="${INTEGRATION_TESTS-false}" bats ${test_names[@]}
+
+    TEST_REPOSITORY_URL="$TEST_REPOSITORY_URL" \
+    TEST_REPOSITORY_NAME="$(echo "$TEST_REPOSITORY_URL" | grep -o '/.*' | sed 's:/::g' | sed 's:\.git::g')" \
+    INTEGRATION_TESTS="${INTEGRATION_TESTS-false}" \
+    bats ${test_names[@]}
+
     remove_synchronization_flag "$?"
+}
+
+load_config() {
+    [[ ! -f "$(dirname "$0")/tests.config" ]] && echo "$(dirname "$0")/tests.config file does not exist" && exit 1
+    . "$(dirname "$0")"/tests.config
 }
 
 verify_dependencies() {
@@ -63,12 +75,12 @@ verify_dependencies() {
 }
 
 remote_test_is_running() {
-    tags="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test)"
+    tags="$(git ls-remote --tags "$TEST_REPOSITORY_URL")"
     [[ "$tags" == *"refs/tags/INTEGRATION_TEST_RUNNING"* ]]
 }
 
 get_remote_tag_age_in_secs() {
-    last_tag_creation_secs="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test \
+    last_tag_creation_secs="$(git ls-remote --tags "$TEST_REPOSITORY_URL" \
                             | awk '{print $2}' \
                             | grep 'INTEGRATION_TEST_RUNNING' \
                             | sed 's:refs/tags/INTEGRATION_TEST_RUNNING-::')"
@@ -80,7 +92,7 @@ get_remote_tag_age_in_secs() {
 remove_remote_tag() {
     local -r current_dir="$(pwd)"
     if [[ ! -d "/tmp/wize-flow-test/.git" ]]; then
-        git clone git@github.com:wizeline/wize-flow-test /tmp/wize-flow-test &>/dev/null
+        git clone "$TEST_REPOSITORY_URL" /tmp/wize-flow-test &>/dev/null
     fi
     cd /tmp/wize-flow-test
     git push origin --delete "refs/tags/$1" &>/dev/null
@@ -89,7 +101,7 @@ remove_remote_tag() {
 }
 
 remove_current_remote_tag() {
-    tag_to_delete="$(git ls-remote --tags git@github.com:wizeline/wize-flow-test \
+    tag_to_delete="$(git ls-remote --tags "$TEST_REPOSITORY_URL" \
                     | awk '{print $2}' \
                     | grep 'INTEGRATION_TEST_RUNNING' \
                     | sed 's:refs/tags/::')"
@@ -133,7 +145,7 @@ verify_and_set_synchronization_flag() {
         local -r current_dir="$(pwd)"
 
         #TODO: We are assuming /tmp/ exists and is writable
-        git clone git@github.com:wizeline/wize-flow-test /tmp/wize-flow-test &>/dev/null
+        git clone "$TEST_REPOSITORY_URL" /tmp/wize-flow-test &>/dev/null
         cd /tmp/wize-flow-test
 
         if ! git push origin origin/master:refs/tags/INTEGRATION_TEST_RUNNING-"$(date +%s)" &>/dev/null; then

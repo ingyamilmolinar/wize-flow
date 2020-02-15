@@ -4,7 +4,7 @@ setup() {
     # Unit testing support for hotfix functionality is missing
     [[ "$INTEGRATION_TESTS" != "true" ]] && skip "Unit tests are not supported for hotfix workflow"
     load common/setup
-    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL"
     load common/remote_cleanup
 }
 
@@ -27,14 +27,14 @@ teardown() {
     # Calling finish without publishing should fail 
     run git wize-flow hotfix finish "$branch_name" "0.1.1"
     [ "$status" != "0" ]
-    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository wize-flow-test"* ]]
+    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository $TEST_REPOSITORY_NAME"* ]]
 
     git wize-flow publish
 
     # Calling finish with published branch but no PR should fail
     run git wize-flow hotfix finish "$branch_name" "0.1.1"
     [ "$status" != "0" ]
-    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository wize-flow-test"* ]]
+    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository $TEST_REPOSITORY_NAME"* ]]
     
     # Create PR on github from hotfix/$branch_name to master 
     local -r pr_link=$(hub pull-request -m "Test PR created by $user_and_hostname" -b master -h "hotfix/$branch_name")
@@ -43,7 +43,7 @@ teardown() {
     # Calling finish with open unmerged PR should fail
     run git wize-flow hotfix finish "$branch_name" "0.1.1"
     [ "$status" != "0" ]
-    [[ "$output" == *"The PR $pr_num on repository wize-flow-test has not been merged"* ]]
+    [[ "$output" == *"The PR $pr_num on repository $TEST_REPOSITORY_NAME has not been merged"* ]]
 
     # This will merge the open PR
     git checkout master && git merge "hotfix/$branch_name"
@@ -53,10 +53,7 @@ teardown() {
     sleep 1
 
     # Calling finish with merged PR should succeed
-    #run git wize-flow hotfix finish "$branch_name" "0.1.1"
-    run bash -c "git wize-flow hotfix finish $branch_name 0.1.1"
-    echo "status $status"
-    echo "output $output"
+    run git wize-flow hotfix finish "$branch_name" "0.1.1"
     [ "$status" == "0" ]
     # TODO: Next commented line fails. It must be a bug on wize-flow
     # [[ "$output" != *"branch 'hotfix/$branch_name' has been merged into 'master'"* ]]
@@ -92,9 +89,12 @@ teardown() {
     git commit -m "touching $user_and_hostname-2"
     git wize-flow publish
 
-    run git wize-flow hotfix finish "$branch_name" "0.1.1"
+    #run git wize-flow hotfix finish "$branch_name" "0.1.1"
+    run bash -c "git wize-flow hotfix finish $branch_name 0.1.1"
+    echo "status: $status"
+    echo "output: $output"
     [ "$status" != "0" ]
-    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository wize-flow-test"* ]]
+    [[ "$output" == *"No PR has been created from hotfix/$branch_name to master on repository $TEST_REPOSITORY_NAME"* ]]
     
 }
 
@@ -117,7 +117,7 @@ teardown() {
     rm -fr "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
     mkdir -p "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
     cd "$BATS_TMPDIR"/"$BATS_TEST_NAME-conflict"
-    git clone git@github.com:wizeline/wize-flow-test.git "$(pwd)"
+    git clone "$TEST_REPOSITORY_URL" "$(pwd)"
 
     # Simulate a conflict on develop 
     git checkout develop

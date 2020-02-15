@@ -5,7 +5,7 @@ setup() {
     load common/setup
     #TOFIX: We shouldn't need to have an initialized repository just to validate inputs
     #Added this line so last tests don't break
-    git wize-flow init "$(pwd)" git@github.com:wizeline/wize-flow-test.git
+    git wize-flow init "$(pwd)" "$TEST_REPOSITORY_URL"
     load common/remote_cleanup
 }
 
@@ -87,7 +87,7 @@ teardown() {
             run git wize-flow "$workflow" finish "tag"
         fi
         [ "$status" != "0" ]
-        [[ "$output" == *"No PR has been created from $workflow/my-branch to $target_branch on repository"* ]]
+        [[ "$output" == *"No PR has been created from $workflow/my-branch to $target_branch on repository $TEST_REPOSITORY_NAME"* ]]
     done
 }
 
@@ -112,6 +112,6 @@ teardown() {
             
         fi
         [ "$status" != "0" ]
-        [[ "$output" == *"No PR has been created from $workflow/my-branch to $target_branch on repository"* ]]
+        [[ "$output" == *"No PR has been created from $workflow/my-branch to $target_branch on repository $TEST_REPOSITORY_NAME"* ]]
     done
 }
