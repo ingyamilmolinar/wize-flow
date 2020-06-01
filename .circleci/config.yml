@@ -42,5 +42,5 @@ jobs:
                 name: Set up git username and email
                 command: su - circleci -c "git config --add --global user.name wize-flow-test-bot && git config --add --global user.email wize.flow.test.bot@gmail.com"
             - run:
-                name: Run integration tests
-                command: su - circleci -c "GITHUB_TOKEN=01c45c695426fadcbdff0e9057454a6ac8f0bb76 TERM=dumb INTEGRATION_TESTS=true ./project/run-test.sh"
+                name: Run unit tests
+                command: su - circleci -c "TERM=dumb ./project/run-test.sh"
